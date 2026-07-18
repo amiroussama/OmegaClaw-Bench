@@ -12,6 +12,19 @@ Run (in-container): python3 benchmarks/freeciv/ab_sim.py --arm pln --game-id g -
     --hours 10 --max-turns 2000 --out benchmarks/freeciv/ab_runs/<ts>
 """
 
+# --- OmegaClaw-Bench core-path bootstrap (added by the benchmarks<->core split) ---
+import os as _ocp, sys as _scp
+_cp_root = _ocp.path.dirname(_ocp.path.abspath(__file__))
+while _cp_root != _ocp.path.dirname(_cp_root):
+    if _ocp.path.isdir(_ocp.path.join(_cp_root, "core", "src")):
+        break
+    _cp_root = _ocp.path.dirname(_cp_root)
+for _cp in (_ocp.path.join(_cp_root, "core", "src"), _ocp.path.join(_cp_root, "core")):
+    if _cp not in _scp.path:
+        _scp.path.insert(0, _cp)
+# --- end OmegaClaw-Bench core-path bootstrap ---
+
+
 import argparse
 import asyncio
 import json

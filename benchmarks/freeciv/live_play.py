@@ -19,6 +19,19 @@ Config (env): FREECIV_PROXY_WS (default ws://localhost:8002/llmsocket/8002),
 FREECIV_API_TOKEN (default test-token-fc3d-001), FREECIV_AGENT_ID, FREECIV_GAME_ID,
 FREECIV_TURNS (default 3). Run: python3 benchmarks/freeciv/live_play.py
 """
+
+# --- OmegaClaw-Bench core-path bootstrap (added by the benchmarks<->core split) ---
+import os as _ocp, sys as _scp
+_cp_root = _ocp.path.dirname(_ocp.path.abspath(__file__))
+while _cp_root != _ocp.path.dirname(_cp_root):
+    if _ocp.path.isdir(_ocp.path.join(_cp_root, "core", "src")):
+        break
+    _cp_root = _ocp.path.dirname(_cp_root)
+for _cp in (_ocp.path.join(_cp_root, "core", "src"), _ocp.path.join(_cp_root, "core")):
+    if _cp not in _scp.path:
+        _scp.path.insert(0, _cp)
+# --- end OmegaClaw-Bench core-path bootstrap ---
+
 import asyncio
 import json
 import os

@@ -1,0 +1,16 @@
+# Plugin registry config for OmegaClaw-Bench.
+#
+# Point the core runtime at this file via OMEGACLAW_PLUGINS_CONFIG_PATH so the FreeCiv tools
+# load as a plugin (they are NOT part of core anymore). NOTE: plugin_registry resolves relative
+# roots against the CORE repo root (the `core/` submodule), so the root climbs one level out of
+# the submodule (`../`) to reach this repo's plugins/. The submodule always sits at `core/`, so
+# this is portable. The FreeCiv plugin declares required FREECIV_* env vars, so it stays
+# disabled (a reported no-op) until a live proxy is configured.
+version: 1
+
+roots:
+  - ../plugins/freeciv
+
+disabled: []
+
+config: {}

@@ -15,6 +15,19 @@ changes before apply, malformed+unsafe proposals quarantined (not installed), ro
 Writes `skill_workshop_results.{md,json}`. Run: `python3 benchmarks/skill_workshop_benchmark.py`
 """
 
+# --- OmegaClaw-Bench core-path bootstrap (added by the benchmarks<->core split) ---
+import os as _ocp, sys as _scp
+_cp_root = _ocp.path.dirname(_ocp.path.abspath(__file__))
+while _cp_root != _ocp.path.dirname(_cp_root):
+    if _ocp.path.isdir(_ocp.path.join(_cp_root, "core", "src")):
+        break
+    _cp_root = _ocp.path.dirname(_cp_root)
+for _cp in (_ocp.path.join(_cp_root, "core", "src"), _ocp.path.join(_cp_root, "core")):
+    if _cp not in _scp.path:
+        _scp.path.insert(0, _cp)
+# --- end OmegaClaw-Bench core-path bootstrap ---
+
+
 import json
 import os
 import sys

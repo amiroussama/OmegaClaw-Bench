@@ -6,6 +6,19 @@ byte-for-byte determinism, >=95% field coverage, PLN atom shape, the legal-accep
 illegal-reject matrix, and the freeciv-{observe,action} tool wiring (arg-spec +
 output_format_block + shim behavior).
 """
+
+# --- OmegaClaw-Bench core-path bootstrap (added by the benchmarks<->core split) ---
+import os as _ocp, sys as _scp
+_cp_root = _ocp.path.dirname(_ocp.path.abspath(__file__))
+while _cp_root != _ocp.path.dirname(_cp_root):
+    if _ocp.path.isdir(_ocp.path.join(_cp_root, "core", "src")):
+        break
+    _cp_root = _ocp.path.dirname(_cp_root)
+for _cp in (_ocp.path.join(_cp_root, "core", "src"), _ocp.path.join(_cp_root, "core")):
+    if _cp not in _scp.path:
+        _scp.path.insert(0, _cp)
+# --- end OmegaClaw-Bench core-path bootstrap ---
+
 import json
 import os
 import sys

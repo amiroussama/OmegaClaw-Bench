@@ -1,0 +1,10 @@
+# OmegaClaw-Bench dependencies.
+#
+# The benchmarks import core modules from the `core/` git submodule (see README). Most of what
+# they need is therefore satisfied by installing the core's own requirements:
+#     pip install -r core/requirements.txt
+#
+# Beyond that, the only benchmark-specific runtime dependency is `websockets`, used by the
+# FreeCiv live client (benchmarks/freeciv/{client,ab_sim,live_play}.py). It is imported lazily,
+# so the offline KPI + FreeCiv self-tests do not require it.
+websockets

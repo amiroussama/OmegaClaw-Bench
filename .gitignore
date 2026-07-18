@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+
+# FreeCiv run artifacts are regenerated; keep committed sample runs but ignore fresh ones.
+benchmarks/freeciv/ab_runs/tmp_*/
+benchmarks/freeciv/viz/data/

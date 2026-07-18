@@ -1,0 +1,13 @@
+{
+  "id": "freeciv",
+  "version": "1.0.0",
+  "description": "FreeCiv PLN-vs-LLM benchmark tools — observe game state as PLN premises and validate/submit actions. Extracted from OmegaClaw-Core; loads freeciv_tool from benchmarks/freeciv/.",
+  "entrypoint": "plugin_impl.py",
+  "permissions": [],
+  "skill_dirs": [],
+  "requires": {
+    "env": ["FREECIV_PROXY_URL", "FREECIV_WS_URL", "FREECIV_API_TOKEN", "FREECIV_GAME_ID", "FREECIV_PLAYER_ID"],
+    "bins": [],
+    "config": []
+  }
+}
