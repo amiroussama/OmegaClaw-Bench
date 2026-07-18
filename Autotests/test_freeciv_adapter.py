@@ -230,20 +230,47 @@ def test_wire_form_action_variant_normalized():
 
 
 # --- tool wiring -----------------------------------------------------------
+# FreeCiv is no longer a first-class core tool: after the benchmarks<->core split it is a
+# plugin (plugins/freeciv/plugin_impl.py) invoked via `plugin-invoke`. These tests validate the
+# plugin registration contract instead of the old action_protocol schema/prompt wiring.
 
-def test_tools_registered_in_arg_spec_and_prompt():
-    assert "freeciv-observe" in ap.ALLOWED_TOOLS
-    assert "freeciv-action" in ap.ALLOWED_TOOLS
-    block = ap.output_format_block()
-    assert "freeciv-observe{}" in block
-    assert "freeciv-action{action}" in block
+def test_freeciv_plugin_registers_both_tools():
+    import importlib.util
+    _here = os.path.dirname(os.path.abspath(__file__))
+    ep = os.path.join(os.path.dirname(_here), "plugins", "freeciv", "plugin_impl.py")
+    spec = importlib.util.spec_from_file_location("freeciv_plugin_impl", ep)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    specs = mod.register()
+    by_name = {s["name"]: s for s in specs}
+    assert set(by_name) == {"freeciv-observe", "freeciv-action"}
+    assert callable(by_name["freeciv-observe"]["handler"])
+    assert callable(by_name["freeciv-action"]["handler"])
+    assert by_name["freeciv-action"]["arg"] == "action_json"
 
 
-def test_freeciv_action_parses_and_renders():
-    r = ap.parse_actions('{"actions":[{"tool":"freeciv-observe","args":{}}]}')
-    assert r.ok and ap.actions_to_metta(r.actions) == "((freeciv-observe))"
-    r = ap.parse_actions('{"actions":[{"tool":"freeciv-action","args":{"action":"{\\"type\\":\\"end_turn\\"}"}}]}')
-    assert r.ok
+def test_freeciv_plugin_handlers_delegate_to_shim():
+    """The plugin handlers must call through to the freeciv_tool shim (observe/act) — verified
+    by monkeypatching the shim so no live client/network is needed."""
+    import importlib.util
+    _here = os.path.dirname(os.path.abspath(__file__))
+    ep = os.path.join(os.path.dirname(_here), "plugins", "freeciv", "plugin_impl.py")
+    spec = importlib.util.spec_from_file_location("freeciv_plugin_impl2", ep)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    handlers = {s["name"]: s["handler"] for s in mod.register()}
+
+    calls = []
+    _orig_observe, _orig_act = mod.freeciv_tool.observe, mod.freeciv_tool.act
+    try:
+        mod.freeciv_tool.observe = lambda *a, **k: calls.append(("observe", a, k)) or "OBS"
+        mod.freeciv_tool.act = lambda arg: calls.append(("act", arg)) or "ACT"
+        assert handlers["freeciv-observe"]("") == "OBS"
+        assert handlers["freeciv-action"]('{"type":"end_turn"}') == "ACT"
+        assert [c[0] for c in calls] == ["observe", "act"]
+        assert calls[1][1] == '{"type":"end_turn"}'
+    finally:
+        mod.freeciv_tool.observe, mod.freeciv_tool.act = _orig_observe, _orig_act
 
 
 def test_shim_observe_deterministic_and_act_gates_illegal():
