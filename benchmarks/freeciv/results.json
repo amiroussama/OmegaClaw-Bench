@@ -80,8 +80,8 @@
     {
       "id": "pln_settler_to_found_city",
       "category": "expansion",
-      "facts": 6,
-      "atoms": 6,
+      "facts": 7,
+      "atoms": 7,
       "coverage": 1.0,
       "deterministic": true,
       "legal_accepted": "3/3",

@@ -23,7 +23,7 @@ Fixture dataset: **7 `llm_optimized` states** (schema-grounded, verified against
 | tech_choice | science | 13 | 13 | 1.00 | True | 2/2 | 2/2 |
 | unit_movement | movement | 6 | 6 | 1.00 | True | 2/2 | 2/2 |
 | worker_improvement | economy | 10 | 10 | 1.00 | True | 3/3 | 2/2 |
-| pln_settler_to_found_city | expansion | 6 | 6 | 1.00 | True | 3/3 | 2/2 |
+| pln_settler_to_found_city | expansion | 7 | 7 | 1.00 | True | 3/3 | 2/2 |
 
 The candidate converts every state into deterministic PLN atoms and rejects **100%** of the illegal candidate actions before they reach `action_submit`, while accepting all legal ones. The baseline (raw text, no gate) would submit every illegal action. Live win-rate/score KPIs require a running game and are measured in the live E2E phase (report §5).
 
