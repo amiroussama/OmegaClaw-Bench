@@ -36,11 +36,21 @@ import shlex
 import subprocess
 import sys
 import tempfile
+import time
 
-from . import atoms
+from . import atoms, rulesparse
 
 _HERE = os.path.dirname(os.path.abspath(__file__))            # benchmarks/freeciv
 _REPO = os.path.dirname(os.path.dirname(_HERE))               # repo root
+
+# The reusable PLN trace module lives at <repo>/src (beside delegation.py).
+_SRC = os.path.join(_REPO, "src")
+if _SRC not in sys.path:
+    sys.path.insert(0, _SRC)
+try:
+    from pln_trace import PlnTrace
+except Exception:  # noqa: BLE001 - tracing is best-effort; never break reasoning
+    PlnTrace = None
 
 # Chaining bounds (env-overridable). The fixpoint runs at most HOP_CAP passes, and conclusions
 # whose confidence has decayed below CONF_MIN are pruned (chained Modus Ponens decays c fast).
@@ -244,7 +254,7 @@ def format_facts_for_llm(fact_sentences, limit=40):
     return "\n".join(lines)
 
 
-def format_for_llm(recommendations):
+def format_for_llm(recommendations, grounded=None):
     """Render derived recommendations as a concise prompt block (empty string if none).
 
     Framed as OPTIONAL hints, NOT a checklist. The 2026-07-08 head-to-head duel showed the LLM
@@ -252,14 +262,25 @@ def format_for_llm(recommendations):
     len(recommendations) actions and stopped (proposed == n_conclusions on 97-99% of turns, ~1.6-2.1
     actions/turn vs the plain arm's ~2.9), a compounding activity deficit that starved expansion.
     The wording below decouples the action budget from the recommendation count.
+
+    ``grounded`` (optional) is a list parallel to ``recommendations`` of concrete action dicts (from
+    ``ground.ground``) or None; when a grounding is present the specific, legality-checked action is
+    shown alongside the abstract hint so the LLM can act on it precisely.
     """
     if not recommendations:
         return ""
+    grounded = grounded or []
     lines = ["DERIVED (PLN reasoning) — optional strategic hints (NOT a to-do list):"]
-    for r in recommendations:
+    for i, r in enumerate(recommendations):
         m = _REC_RE.match(r)
-        if m:
-            lines.append("  - {} → {}".format(m.group(1), m.group(2)))
+        if not m:
+            continue
+        line = "  - {} → {}".format(m.group(1), m.group(2))
+        g = grounded[i] if i < len(grounded) else None
+        if g:
+            from . import ground
+            line += "  [suggested legal action: {}]".format(ground.format_action(g))
+        lines.append(line)
     lines.append(
         "(Hints only — do NOT limit yourself to these. Still choose the FULL 1-3 actions using your "
         "own judgment, including expansion such as founding new cities with settlers, which the "

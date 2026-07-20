@@ -38,7 +38,7 @@ if _BENCH not in sys.path:
     sys.path.insert(0, _BENCH)
 
 from freeciv import (adapter, atoms, actions, client, turncycle, metrics, llm_agent, reason,  # noqa: E402
-                     duel_sim, fact_proposer)
+                     duel_sim, fact_proposer, ground)
 
 WS = os.environ.get("FREECIV_PROXY_WS", "ws://localhost:8002/llmsocket/8002")
 TOKEN = os.environ.get("FREECIV_API_TOKEN", "test-token-fc3d-001")
@@ -110,7 +110,7 @@ def _context(arm, norm):
     """
     plain = llm_agent.render_plain(norm)
     extra = {"reason_ms": None, "recs": [], "n_conclusions": 0, "hops": 0,
-             "n_llm_facts": 0, "fact_llm_ms": None}
+             "n_grounded": 0, "n_llm_facts": 0, "fact_llm_ms": None}
     if not _is_fact_arm(arm):
         return plain, extra
 
@@ -125,14 +125,16 @@ def _context(arm, norm):
     if not _uses_chaining(arm):
         return ctx, extra
 
-    # facts+chaining: PLN multi-hop over the merged facts -> recommendations
+    # facts+chaining: PLN multi-hop over the merged facts -> grounded, specific recommendations
     t0 = time.time()
     recs, rmeta = reason.derive(facts, return_meta=True)
     extra["reason_ms"] = int((time.time() - t0) * 1000)
     extra["recs"] = recs
     extra["n_conclusions"] = rmeta.get("n_conclusions", len(recs))
     extra["hops"] = rmeta.get("hops", 0)
-    block = reason.format_for_llm(recs)
+    grounded = [ground.ground(r, norm) for r in recs]   # concrete, legality-checked (None if no fit)
+    extra["n_grounded"] = sum(1 for g in grounded if g)  # already re-validated -> grounded == legal
+    block = reason.format_for_llm(recs, grounded=grounded)
     ctx = ctx + ("\n\n" + block if block else "")
     return ctx, extra
 
@@ -191,7 +193,7 @@ async def run(arm, seed, hours, max_turns, out_dir):
                        "illegal_rate": (blocked / proposed) if proposed else 0.0,
                        "llm_ms": meta.get("llm_ms"), "reason_ms": reason_ms, "n_conclusions": n_conc,
                        "n_llm_facts": extra["n_llm_facts"], "fact_llm_ms": extra["fact_llm_ms"],
-                       "hops": extra["hops"],
+                       "hops": extra["hops"], "n_grounded": extra["n_grounded"],
                        "prompt_chars": meta.get("prompt_chars"), "llm_error": meta.get("error"),
                        "moves": moves, "recommendations": recommendations}
                 _log(out_dir, arm, rec)
