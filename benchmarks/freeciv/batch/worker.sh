@@ -7,9 +7,11 @@
 # carries a single active game, so concurrency reconnect-storms.
 #
 # Args: $1=INST  $2=PROXY_PORT  $3="space separated seeds"
-# Env : SNET_API_KEY, BATCH_REL, FREECIV_PROVIDER, DUEL_MAX_TURNS, AB_MAX_TURNS, GAME_HOURS
+# Env : SNET_API_KEY, BATCH_REL, FREECIV_PROVIDER, DUEL_MAX_TURNS, AB_MAX_TURNS, GAME_HOURS,
+#       MODES (which protocols to run per seed; default "duel ab" — set "ab" or "duel" to skip one)
 set -u
 INST="$1"; PROXY_PORT="$2"; SEEDS="$3"
+MODES="${MODES:-duel ab}"
 OMEGA=/home/rojo-dev/Repos/OmegaClaw-Core
 STACK=/home/rojo-dev/Repos/freeciv-llm
 WS="ws://localhost:$PROXY_PORT/llmsocket/8002"
@@ -52,23 +54,27 @@ for SEED in $SEEDS; do
   mkdir -p "$OMEGA/$SD/duel/g1" "$OMEGA/$SD/duel/g2" "$OMEGA/$SD/ab"
   log "=== seed $SEED START (duel_mt=$DUEL_MT ab_mt=$AB_MT) ==="
 
-  recreate; log "seed $SEED duel g1 (PLN=side0)"
-  sim "fc-b$INST-s$SEED-dg1" "exec python3 -u /PeTTa/repos/OmegaClaw-Core/benchmarks/freeciv/duel_sim.py --game-id b${INST}d1_$SEED --seed $SEED --pln-side 0 --hours $HRS --max-turns $DUEL_MT --size 2 --out /PeTTa/repos/OmegaClaw-Core/$SD/duel/g1"
-  wait_gone "fc-b$INST-s$SEED-dg1"
+  case " $MODES " in *" duel "*)
+    recreate; log "seed $SEED duel g1 (PLN=side0)"
+    sim "fc-b$INST-s$SEED-dg1" "exec python3 -u /PeTTa/repos/OmegaClaw-Core/benchmarks/freeciv/duel_sim.py --game-id b${INST}d1_$SEED --seed $SEED --pln-side 0 --hours $HRS --max-turns $DUEL_MT --size 2 --out /PeTTa/repos/OmegaClaw-Core/$SD/duel/g1"
+    wait_gone "fc-b$INST-s$SEED-dg1"
 
-  recreate; log "seed $SEED duel g2 (PLN=side1)"
-  sim "fc-b$INST-s$SEED-dg2" "exec python3 -u /PeTTa/repos/OmegaClaw-Core/benchmarks/freeciv/duel_sim.py --game-id b${INST}d2_$SEED --seed $SEED --pln-side 1 --hours $HRS --max-turns $DUEL_MT --size 2 --out /PeTTa/repos/OmegaClaw-Core/$SD/duel/g2"
-  wait_gone "fc-b$INST-s$SEED-dg2"
-  report duel_report.py "$SD/duel"; log "seed $SEED duel report done"
+    recreate; log "seed $SEED duel g2 (PLN=side1)"
+    sim "fc-b$INST-s$SEED-dg2" "exec python3 -u /PeTTa/repos/OmegaClaw-Core/benchmarks/freeciv/duel_sim.py --game-id b${INST}d2_$SEED --seed $SEED --pln-side 1 --hours $HRS --max-turns $DUEL_MT --size 2 --out /PeTTa/repos/OmegaClaw-Core/$SD/duel/g2"
+    wait_gone "fc-b$INST-s$SEED-dg2"
+    report duel_report.py "$SD/duel"; log "seed $SEED duel report done"
+  ;; esac
 
-  recreate; log "seed $SEED A/B pln arm"
-  sim "fc-b$INST-s$SEED-abp" "exec python3 -u /PeTTa/repos/OmegaClaw-Core/benchmarks/freeciv/ab_sim.py --arm pln --game-id b${INST}ap_$SEED --seed $SEED --hours $HRS --max-turns $AB_MT --out /PeTTa/repos/OmegaClaw-Core/$SD/ab"
-  wait_gone "fc-b$INST-s$SEED-abp"
+  case " $MODES " in *" ab "*)
+    recreate; log "seed $SEED A/B pln arm"
+    sim "fc-b$INST-s$SEED-abp" "exec python3 -u /PeTTa/repos/OmegaClaw-Core/benchmarks/freeciv/ab_sim.py --arm pln --game-id b${INST}ap_$SEED --seed $SEED --hours $HRS --max-turns $AB_MT --out /PeTTa/repos/OmegaClaw-Core/$SD/ab"
+    wait_gone "fc-b$INST-s$SEED-abp"
 
-  recreate; log "seed $SEED A/B plain arm"
-  sim "fc-b$INST-s$SEED-abq" "exec python3 -u /PeTTa/repos/OmegaClaw-Core/benchmarks/freeciv/ab_sim.py --arm plain --game-id b${INST}aq_$SEED --seed $SEED --hours $HRS --max-turns $AB_MT --out /PeTTa/repos/OmegaClaw-Core/$SD/ab"
-  wait_gone "fc-b$INST-s$SEED-abq"
-  report ab_report.py "$SD/ab"; log "seed $SEED ab report done"
+    recreate; log "seed $SEED A/B plain arm"
+    sim "fc-b$INST-s$SEED-abq" "exec python3 -u /PeTTa/repos/OmegaClaw-Core/benchmarks/freeciv/ab_sim.py --arm plain --game-id b${INST}aq_$SEED --seed $SEED --hours $HRS --max-turns $AB_MT --out /PeTTa/repos/OmegaClaw-Core/$SD/ab"
+    wait_gone "fc-b$INST-s$SEED-abq"
+    report ab_report.py "$SD/ab"; log "seed $SEED ab report done"
+  ;; esac
 
   log "=== seed $SEED DONE ==="
 done

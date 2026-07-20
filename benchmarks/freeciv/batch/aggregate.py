@@ -18,7 +18,13 @@ import math
 import os
 import sys
 
+_FREECIV = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # benchmarks/freeciv
+if _FREECIV not in sys.path:
+    sys.path.insert(0, _FREECIV)
+import metrics as _metrics  # noqa: E402
+
 METRICS = ("n_cities", "n_units", "n_techs")
+ERA_THRESHOLDS = ("4", "6")  # tech-count thresholds aggregated as era-progression deltas
 
 
 def _rows(path):
@@ -53,6 +59,57 @@ def _ab_final(path):
         if isinstance(r.get("metrics"), dict) and r["metrics"].get("n_cities") is not None:
             last = r
     return last["metrics"] if last else None
+
+
+def _duel_series(path, pln_side):
+    """(pln_traj, plain_traj, pln_bundles) from a duel game for era + PLN-quality (or None)."""
+    pln_traj, plain_traj, bundles = [], [], []
+    for r in _rows(path):
+        s0, s1 = r.get("side0"), r.get("side1")
+        if not (isinstance(s0, dict) and isinstance(s1, dict) and s0.get("metrics") and s1.get("metrics")):
+            continue
+        pln_s, plain_s = (s0, s1) if pln_side == 0 else (s1, s0)
+        turn = r.get("turn")
+        pln_traj.append({"turn": turn, **pln_s["metrics"]})
+        plain_traj.append({"turn": turn, **plain_s["metrics"]})
+        bundles.append({"moves": pln_s.get("moves") or [],
+                        "recommendations": pln_s.get("recommendations") or []})
+    return (pln_traj, plain_traj, bundles) if pln_traj else None
+
+
+def _ab_series(path):
+    """(traj, bundles) from an A/B arm for era + PLN-quality."""
+    traj, bundles = [], []
+    for r in _rows(path):
+        m = r.get("metrics")
+        if isinstance(m, dict) and m.get("n_cities") is not None:
+            traj.append({"turn": r.get("advanced_to") or r.get("turn"), **m})
+            bundles.append({"moves": r.get("moves") or [],
+                            "recommendations": r.get("recommendations") or []})
+    return traj, bundles
+
+
+def _era_delta(era_pairs):
+    """Paired plain-minus-pln turns-to-N deltas (positive favors PLN — reaches N sooner).
+
+    ``era_pairs``: list of (pln_t2t, plain_t2t) dicts. Censored pairs (either None) are skipped;
+    n (in the paired-t block) reports how many decisive pairs remained.
+    """
+    out = {}
+    for n in ERA_THRESHOLDS:
+        diffs = [plain[n] - pln[n] for pln, plain in era_pairs
+                 if pln.get(n) is not None and plain.get(n) is not None]
+        out[n] = _paired_t(diffs)
+    return out
+
+
+def _quality_means(quality_list):
+    def _mean(key):
+        xs = [q[key] for q in quality_list if isinstance(q.get(key), (int, float))]
+        return round(sum(xs) / len(xs), 4) if xs else None
+    return {"n": len(quality_list),
+            "mean_pln_action_success_rate": _mean("pln_action_success_rate"),
+            "mean_rec_adoption_rate": _mean("rec_adoption_rate")}
 
 
 def _winner(pln, plain):
@@ -115,6 +172,7 @@ def main():
         base = os.path.join(os.getcwd(), base)
 
     duel_games, ab_games, per_seed = [], [], []
+    duel_era, duel_quality, ab_era, ab_quality = [], [], [], []
     for sd in sorted(glob.glob(os.path.join(base, "seed*"))):
         seed = os.path.basename(sd).replace("seed", "")
         row = {"seed": seed}
@@ -124,18 +182,39 @@ def main():
             if g:
                 duel_games.append(g)
                 row[tag] = _winner(*g)
+        for path, pln_side in ((os.path.join(sd, "duel", "g1", "duel.jsonl"), 0),
+                               (os.path.join(sd, "duel", "g2", "duel.jsonl"), 1)):
+            series = _duel_series(path, pln_side)
+            if series:
+                pln_traj, plain_traj, bundles = series
+                duel_era.append((_metrics.turns_to_tech_counts(pln_traj),
+                                 _metrics.turns_to_tech_counts(plain_traj)))
+                duel_quality.append(_metrics.pln_quality(bundles))
         abp = _ab_final(os.path.join(sd, "ab", "pln.jsonl"))
         abq = _ab_final(os.path.join(sd, "ab", "plain.jsonl"))
         if abp and abq:
             ab_games.append((abp, abq))
             row["ab"] = _winner(abp, abq)
+        pln_traj, pln_bundles = _ab_series(os.path.join(sd, "ab", "pln.jsonl"))
+        plain_traj, _ = _ab_series(os.path.join(sd, "ab", "plain.jsonl"))
+        if pln_traj and plain_traj:
+            ab_era.append((_metrics.turns_to_tech_counts(pln_traj),
+                           _metrics.turns_to_tech_counts(plain_traj)))
+            ab_quality.append(_metrics.pln_quality(pln_bundles))
         per_seed.append(row)
+
+    duel_sum = _summarize(duel_games, "duel (mirror slots, PLN vs plain)")
+    duel_sum["era_delta_turns_to_tech"] = _era_delta(duel_era)
+    duel_sum["pln_quality"] = _quality_means(duel_quality)
+    ab_sum = _summarize(ab_games, "A/B (PLN vs plain, each vs AI)")
+    ab_sum["era_delta_turns_to_tech"] = _era_delta(ab_era)
+    ab_sum["pln_quality"] = _quality_means(ab_quality)
 
     result = {
         "batch": base,
         "seeds_scanned": len(per_seed),
-        "duel": _summarize(duel_games, "duel (mirror slots, PLN vs plain)"),
-        "ab": _summarize(ab_games, "A/B (PLN vs plain, each vs AI)"),
+        "duel": duel_sum,
+        "ab": ab_sum,
         "per_seed": per_seed,
     }
     with open(os.path.join(base, "aggregate.json"), "w", encoding="utf-8") as f:
@@ -156,8 +235,21 @@ def main():
             lines.append("| %s | %s | %s | %s | %s |"
                          % (k.replace("n_", ""), d.get("mean"), d.get("n"), d.get("t"), d.get("p_approx")))
         lines.append("")
+        # era progression (turns to reach N techs; positive Δ favors PLN — reaches N sooner)
+        era = s.get("era_delta_turns_to_tech", {})
+        lines += ["Era progression — Δ turns to reach N techs (plain−pln; positive favors PLN):",
+                  "", "| N techs | mean Δ | pairs | t | p≈ |", "|---|---|---|---|---|"]
+        for n in ERA_THRESHOLDS:
+            d = era.get(n, {})
+            lines.append("| %s | %s | %s | %s | %s |"
+                         % (n, d.get("mean"), d.get("n"), d.get("t"), d.get("p_approx")))
+        q = s.get("pln_quality", {})
+        lines += ["", "PLN recommendation quality (mean over %s runs): action success rate=%s, "
+                  "rec adoption rate=%s" % (q.get("n"), q.get("mean_pln_action_success_rate"),
+                                            q.get("mean_rec_adoption_rate")), ""]
     lines += ["_Sign-test p: exact two-sided binomial over decisive games. "
-              "Metric p≈: normal approximation to the paired-t two-sided p (use with care for small n)._"]
+              "Metric p≈: normal approximation to the paired-t two-sided p (use with care for small n). "
+              "Era Δ skips censored pairs (a side that never reached N techs)._"]
     md = "\n".join(lines)
     with open(os.path.join(base, "aggregate.md"), "w", encoding="utf-8") as f:
         f.write(md + "\n")

@@ -381,7 +381,10 @@ For a step-by-step operator's guide (run a duel end-to-end, then visualize it), 
 1. **Fix B — expansion vocabulary** in `rules.metta` (needs an adapter fact): see whether PLN can
    *widen* the lead now that anchoring is gone. Plan: `benchmarks/freeciv/docs/anchoring-fix-plan.md`.
 2. **Multiple seeded pairs** (e.g. 10 seeds) to turn the direction-consistent signal into statistics.
-3. **Fix `score/gold/science` extraction** against the real runtime `llm_optimized` shape.
+3. **~~Fix `score/gold/science` extraction~~ (done for gold/score, Issue #5)** — `metrics.py` and
+   `adapter.py` now read `gold`/`score` from the per-player block (`players[pid]`) first, so
+   `Gold`/`Score` are no longer a false 0. `science` remains proxy-limited (no per-player field in
+   the runtime shape) — documented in `benchmarks/freeciv/docs/benchmark-protocols.md` §2.
 4. **Deeper, decision-changing PLN rules** (multi-condition, threat-response, tech-path planning).
 5. **Stability:** the mid-game server reset (turn→1) and the desktop-sleep interruptions warrant a
    more robust host / a proxy-side fix for unattended long runs.

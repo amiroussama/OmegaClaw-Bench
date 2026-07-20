@@ -207,6 +207,34 @@ def test_duel_report_final_exports_era_and_quality():
         assert g["winner_arm"] == "pln"
 
 
+def test_aggregate_era_and_quality():
+    import subprocess
+
+    def side(techs, mv, recs):
+        return {"metrics": {"n_cities": 1, "n_units": 2, "n_techs": techs,
+                            "tech_names": ["A", "B", "C", "D"][:techs]},
+                "moves": mv, "recommendations": recs}
+
+    mv = [{"actor": 7, "actor_kind": "unit_id", "pln_recommended": True, "valid": True}]
+    rec = [{"entity": "Unit_7", "action": "Settle"}]
+    agg_py = os.path.join(_BENCHMARKS, "freeciv", "batch", "aggregate.py")
+    with tempfile.TemporaryDirectory() as base:
+        for seed in ("00", "01"):
+            g1 = os.path.join(base, "seed" + seed, "duel", "g1")
+            os.makedirs(g1)
+            # both sides reach 4 techs (decisive era pair): pln by turn 4, plain by turn 6
+            rows = [{"turn": 2, "side0": side(4, mv, rec), "side1": side(0, [], [])},
+                    {"turn": 6, "side0": side(4, mv, rec), "side1": side(4, [], [])}]
+            with open(os.path.join(g1, "duel.jsonl"), "w") as f:
+                f.write("\n".join(json.dumps(r) for r in rows))
+        r = subprocess.run([sys.executable, agg_py, base], capture_output=True, text=True)
+        assert r.returncode == 0, r.stderr
+        agg = json.load(open(os.path.join(base, "aggregate.json")))
+        d4 = agg["duel"]["era_delta_turns_to_tech"]["4"]
+        assert d4["n"] == 2 and d4["mean"] == 4.0   # plain 6 - pln 2 = 4, favors PLN
+        assert agg["duel"]["pln_quality"]["mean_pln_action_success_rate"] == 1.0
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     for fn in fns:

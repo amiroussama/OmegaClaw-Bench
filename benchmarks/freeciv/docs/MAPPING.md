@@ -36,6 +36,9 @@ Each rule is a PLN `Implication` (situation => recommended action) fired via lib
 | `(Inheritance $c LowFood)` | `Recommend <entity> Food` | `(stv 0.9 0.8)` | heuristic | yes | a food-deficit city should prioritize food |
 | `(Inheritance $u Type_settlers)` | `Recommend <entity> Settle` | `(stv 0.8 0.7)` | heuristic | yes | a settler is usually best spent founding a city |
 | `(Evaluation (Predicate Threatens) (List $e $t))` | `Recommend <target> Retreat` | `(stv 0.85 0.75)` | heuristic | no | a threatened unit may retreat (Evaluation-form, inert under current lib_pln) |
+| `(Priority $c Military)` | `Recommend <entity> BuildDefender` | `(stv 0.9 0.9)` | heuristic | no | a city needing a garrison should build a defender (3-hop chain |
+| `(State $c NeedsGrowth)` | `Recommend <entity> Irrigate` | `(stv 0.9 0.9)` | heuristic | no | a food-short city should irrigate for growth (2-hop chain |
+| `(State $u ReadyToExpand)` | `Recommend <entity> FoundCity` | `(stv 0.9 0.9)` | heuristic | no | a settler ready to expand should found a city (2-hop chain |
 
 ## 3. Game-world laws
 
@@ -63,5 +66,5 @@ Common shape errors: `E100` unknown action type, `E220` missing required field, 
 
 ## 5. Recommendation vocabulary
 
-Rules derive `(Recommend <entity> <action>)` atoms. Current actions: `Defend`, `Food`, `Retreat`, `Settle`.
+Rules derive `(Recommend <entity> <action>)` atoms. Current actions: `BuildDefender`, `Defend`, `Food`, `FoundCity`, `Irrigate`, `Retreat`, `Settle`.
 

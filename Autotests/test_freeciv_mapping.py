@@ -89,7 +89,8 @@ def test_vocabulary_fully_exercised():
 
 def test_rules_parse_and_confidence_classes():
     rules = rulesparse.load_rules()
-    assert len(rules) == 4, "expected 4 rules in rules.metta, got %d" % len(rules)
+    # at least the core direct rules; the exact count grows as chain rules are added
+    assert len(rules) >= 4, "expected >=4 Recommend rules in rules.metta, got %d" % len(rules)
     for r in rules:
         assert 0.0 <= r["f"] <= 1.0 and 0.0 <= r["c"] <= 1.0, r
         if r["rule_class"] == "law":
@@ -98,12 +99,12 @@ def test_rules_parse_and_confidence_classes():
             assert r["f"] < 1.0 or r["c"] < 0.99, ("heuristic claims certainty", r)
 
 
-def test_evaluation_rule_is_inert_inheritance_rules_fire():
-    by_form = {}
-    for r in rulesparse.load_rules():
-        by_form.setdefault(r["form"], []).append(r)
-    assert all(r["fires_on_host_engine"] for r in by_form.get("inheritance", []))
-    assert all(not r["fires_on_host_engine"] for r in by_form.get("evaluation", []))
+def test_host_firing_rules_are_the_three_direct_inheritance_rules():
+    rules = rulesparse.load_rules()
+    firing = [r for r in rules if r["form"] == "inheritance" and r["fires_on_host_engine"]]
+    assert sorted(r["action"] for r in firing) == ["Defend", "Food", "Settle"]
+    # the Evaluation-form rule is inert on the host engine
+    assert all(not r["fires_on_host_engine"] for r in rules if r["form"] == "evaluation")
 
 
 # --- end-to-end action-to-atom golden fixture ------------------------------
