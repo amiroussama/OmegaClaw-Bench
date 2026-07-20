@@ -89,12 +89,38 @@
   .pill.plain { background: color-mix(in srgb, var(--plain) 18%, transparent); color: var(--plain); }
   .pill.ok { color: var(--good); } .pill.bad { color: var(--critical); }
   .rec { color: var(--good); font-weight: 600; }
+  .pill.llm { background: color-mix(in srgb, var(--muted) 18%, transparent); color: var(--muted); }
   .empty { color: var(--muted); font-style: italic; padding: 10px 2px; }
+  .muted { color: var(--muted); }
+  /* move rows + trace drawer (#4) */
+  tr.mvrow { cursor: pointer; } tr.mvrow:hover { background: color-mix(in srgb, var(--ink) 5%, transparent); }
+  td.exp { color: var(--muted); width: 14px; }
+  tr.detailrow td { background: color-mix(in srgb, var(--ink) 3%, transparent); padding: 0 8px 8px 28px; border-bottom: 1px solid var(--border); }
+  .drawer { display: flex; flex-direction: column; gap: 6px; padding: 8px 0; }
+  .trace-h { font-weight: 600; font-size: 12px; margin-bottom: 2px; }
+  .trace-sec { color: var(--muted); font-size: 11px; margin-top: 3px; }
+  .trace-atom { font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; }
+  .trace-raw { border-left: 3px solid var(--pln); padding: 4px 10px; background: color-mix(in srgb, var(--pln) 6%, transparent); border-radius: 4px; }
+  .trace-llm { border-left: 3px solid var(--plain); padding: 4px 10px; background: color-mix(in srgb, var(--plain) 8%, transparent); border-radius: 4px; font-style: italic; }
+  .trace-llm-only { color: var(--muted); font-style: italic; padding: 4px 0; }
+  .trace-invalid { color: var(--critical); }
+  .trace-note { color: var(--muted); font-style: italic; }
+  .turnctx { border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; background: var(--tile); }
+  .ctx-h { font-weight: 600; font-size: 12px; margin-bottom: 3px; }
   /* atomspace graph */
   .atom { font-size: 10.5px; }
   .atomnode rect { rx: 6; }
   .atomedge { stroke: var(--axis); fill: none; stroke-width: 1.5; opacity: .55; }
   .atomedge.confirmed { stroke: var(--good); opacity: .9; }
+  /* atomspace inspector lint banner (#2/#4) */
+  .lint { border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; font-size: 12.5px; }
+  .lint.ok { border: 1px solid var(--good); }
+  .lint.issues { border: 1px solid var(--critical); }
+  .lint .f-error { color: var(--critical); }
+  .lint .f-warn { color: #b8860b; }
+  .lint .f-info { color: var(--muted); }
+  .provgroup { margin: 6px 0; } .provgroup summary { cursor: pointer; font-weight: 600; font-size: 12px; }
+  .provgroup .atomline { font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; padding: 1px 0 1px 16px; }
 </style>
 </head>
 <body>
@@ -225,6 +251,34 @@ function render(){
   renderTrajectory();
   renderActivity();
   renderMoves();
+  renderAtomspace();
+}
+
+// Per-run AtomSpace inspector (#2/#4): prefer the run's shipped snapshot (lint + provenance
+// groups); fall back to the global reconstructed graph (dump_atoms.py atoms.json).
+function renderAtomspace(){
+  const snap = curGame && curGame.atomspace;
+  if (!snap){ buildAtoms(); return; }
+  const box = $("#atomBox"); box.innerHTML = "";
+  const lint = snap.lint || {ok: true, findings: []};
+  $("#atomNote").innerHTML = `Per-run AtomSpace snapshot — source <b>${(snap.engine||{}).recommendation_source||"?"}</b>, `
+    + `${Object.entries(snap.counts||{}).map(([k,v]) => `${v} ${k}`).join(" · ")}.`;
+  const banner = el("div", "lint " + (lint.ok ? "ok" : "issues"));
+  banner.innerHTML = `<b>Lint: ${lint.ok ? "OK" : "issues found"}</b> (${(lint.findings||[]).length} finding(s))`
+    + (lint.findings||[]).map(f => `<div class="f-${f.severity}">[${f.severity}] ${f.check}: ${escapeHtml(f.message)}</div>`).join("");
+  box.appendChild(banner);
+  // provenance groups (collapsible)
+  const byProv = {};
+  (snap.atoms||[]).forEach(a => { (byProv[a.provenance] = byProv[a.provenance] || []).push(a); });
+  Object.keys(byProv).sort().forEach(prov => {
+    const d = el("details", "provgroup"); if (prov === "rule" || prov === "inferred-pln") d.open = true;
+    const s = el("summary", null, `${prov} (${byProv[prov].length})`); d.appendChild(s);
+    byProv[prov].forEach(a => {
+      const stv = a.stv ? ` stv ${a.stv.f}/${a.stv.c}` : "";
+      d.appendChild(el("div", "atomline", `${a.statement}${stv}  ·  ${a.category}`));
+    });
+    box.appendChild(d);
+  });
 }
 
 function tile(k, inner){ const t = el("div", "tile"); t.appendChild(el("div", "k", k)); t.appendChild(inner); return t; }
@@ -348,38 +402,99 @@ function renderActivity(){
 }
 
 // ---- per-unit moves -------------------------------------------------------------------------
+function traceFacts(tr){ return (tr && ((tr.inputs && tr.inputs.facts) || tr.facts)) || []; }
+function fmtStv(stv){ return stv ? `stv ${(+stv.strength).toFixed(2)}/${(+stv.confidence).toFixed(2)}` : ""; }
+
+// The detail drawer for one move: raw PLN derivation trace, or an explicit LLM-only marking.
+function moveDetail(a, traces){
+  const wrap = el("div", "drawer");
+  if (!a.valid){
+    const w = el("div", "trace-invalid");
+    w.innerHTML = `<b>Invalid — ${a.error_code || "rejected"}</b>: ${a.error_message || "not submitted"} `
+      + `<span class="muted">(the reasoning that led here is shown below)</span>`;
+    wrap.appendChild(w);
+  }
+  const tr = a.trace_id && traces ? traces[a.trace_id] : null;
+  if (tr){
+    const raw = el("div", "trace-raw");
+    const facts = traceFacts(tr), concl = tr.conclusions || [];
+    let html = `<div class="trace-h">PLN derivation trace <span class="muted">${a.trace_id}</span> — status ${tr.status || "?"}</div>`;
+    html += `<div class="trace-sec">premises (${facts.length}):</div>`;
+    html += facts.map(f => `<div class="trace-atom">${escapeHtml(f)}</div>`).join("");
+    if (concl.length){
+      html += `<div class="trace-sec">derived:</div>`;
+      html += concl.map(c => `<div class="trace-atom">${escapeHtml(c.atom)} <span class="muted">${fmtStv(c.stv)}${c.rule_id ? " · "+c.rule_id : ""}</span></div>`).join("");
+    }
+    raw.innerHTML = html;
+    wrap.appendChild(raw);
+    if (tr.llm_explanation){  // LLM prose is VISUALLY separated from the formal trace
+      const llm = el("div", "trace-llm");
+      llm.innerHTML = `<div class="trace-h">LLM-generated explanation <span class="muted">(not part of the formal trace)</span></div>${escapeHtml(tr.llm_explanation)}`;
+      wrap.appendChild(llm);
+    }
+  } else if (a.pln_recommended){
+    wrap.appendChild(el("div", "trace-note", "PLN recommended this actor this turn, but the per-derivation trace was not recorded (older run)."));
+  } else {
+    const w = el("div", "trace-llm-only");
+    w.textContent = "LLM-only decision — no PLN derivation.";
+    wrap.appendChild(w);
+  }
+  return wrap;
+}
+
 function renderMoves(){
   const box = $("#movesBox"); box.innerHTML = "";
   const moves = curGame.moves || [];
-  if (!moves.length){ $("#movesNote").textContent = "No per-unit moves recorded for this run."; box.innerHTML = '<div class="empty">Per-unit moves are captured by duel_sim.py for runs recorded after move-logging was added. Older runs show aggregates above.</div>'; return; }
-  $("#movesNote").textContent = `${moves.length} turn(s) with recorded moves. ✓ = PLN-recommended actor.`;
-  // turn selector
+  const traces = curGame.traces || {};
+  if (!moves.length){ $("#movesNote").textContent = "No per-unit moves recorded for this run."; box.innerHTML = '<div class="empty">Per-unit moves are captured by the sims for runs recorded after move-logging was added. Older runs show aggregates above.</div>'; return; }
+  $("#movesNote").innerHTML = `${moves.length} turn(s) with recorded moves. ✓ = PLN-recommended actor · ✗ = rejected pre-submit (reason in the row) · click a row for its PLN trace.`;
   const sel = el("select");
   moves.forEach((mv, i) => { const o = el("option", null, "turn " + mv.turn); o.value = i; sel.appendChild(o); });
-  const tbl = el("div");
+  const body = el("div");
   const draw = i => {
-    const mv = moves[i]; tbl.innerHTML = "";
-    const recs = (mv.recommendations || []).map(r => `${r.entity}→${r.action}`).join(", ");
-    if (recs) { const p = el("p", "note", "PLN recommendations this turn: " + recs); tbl.appendChild(p); }
+    const mv = moves[i]; body.innerHTML = "";
+    // Turn-context panel (the minimal honest "strategy" view — derived from this turn's recs).
+    const recList = mv.recommendations || [];
+    const ctx = el("div", "turnctx");
+    if (recList.length){
+      const byAction = {};
+      recList.forEach(r => { (byAction[r.action] = byAction[r.action] || []).push(r.entity); });
+      const summary = Object.keys(byAction).map(act => `${act} ×${byAction[act].length} (${byAction[act].join(", ")})`).join(" · ");
+      ctx.innerHTML = `<div class="ctx-h">Turn objective <span class="muted">(derived from this turn's PLN recommendations — the sims carry no explicit strategy state)</span></div><div>${summary}</div>`;
+    } else {
+      ctx.innerHTML = `<div class="ctx-h">Turn objective</div><div class="muted">no PLN recommendations this turn</div>`;
+    }
+    body.appendChild(ctx);
+
     const table = el("table", "mv");
-    table.innerHTML = "<thead><tr><th>Side</th><th>Actor</th><th>Action</th><th>Target</th><th>Valid</th><th>PLN</th></tr></thead>";
+    table.innerHTML = "<thead><tr><th></th><th>Side</th><th>Actor</th><th>Action</th><th>Target</th><th>Valid</th><th>Origin</th></tr></thead>";
     const tb = el("tbody");
     ["pln", "plain"].forEach(arm => (mv[arm] || []).forEach(a => {
-      const tr = el("tr");
+      const tr = el("tr", "mvrow");
       const tgt = a.target ? (a.target.x != null ? `(${a.target.x},${a.target.y})` : (a.target.production_type || JSON.stringify(a.target))) : "—";
-      tr.innerHTML = `<td><span class="pill ${arm}">${arm}</span></td>`
+      const origin = a.pln_recommended ? '<span class="rec">PLN ✓</span>' : '<span class="pill llm">LLM-only</span>';
+      const validCell = a.valid ? '<span class="pill ok">✓</span>'
+        : `<span class="pill bad" title="${a.error_message || ""}">✗ ${a.error_code || ""}</span>`;
+      tr.innerHTML = `<td class="exp">▸</td><td><span class="pill ${arm}">${arm}</span></td>`
         + `<td class="tag">${a.actor_kind ? a.actor_kind.replace("_id","") : "?"} ${a.actor}</td>`
         + `<td>${a.action_type || "—"}</td><td class="tag">${tgt}</td>`
-        + `<td class="${a.valid ? "pill ok" : "pill bad"}">${a.valid ? "✓" : "✗"}</td>`
-        + `<td>${a.pln_recommended ? '<span class="rec">✓</span>' : ""}</td>`;
-      tb.appendChild(tr);
+        + `<td>${validCell}</td><td>${origin}</td>`;
+      const detailRow = el("tr", "detailrow"); const td = el("td"); td.colSpan = 7;
+      td.appendChild(moveDetail(a, traces)); detailRow.appendChild(td); detailRow.style.display = "none";
+      tr.addEventListener("click", () => {
+        const open = detailRow.style.display !== "none";
+        detailRow.style.display = open ? "none" : "";
+        tr.querySelector(".exp").textContent = open ? "▸" : "▾";
+      });
+      tb.appendChild(tr); tb.appendChild(detailRow);
     }));
-    table.appendChild(tb); tbl.appendChild(table);
+    table.appendChild(tb); body.appendChild(table);
   };
   sel.onchange = () => draw(+sel.value);
   const lbl = el("label", "ctl", "Turn"); lbl.appendChild(sel);
-  box.append(lbl, tbl); draw(0);
+  box.append(lbl, body); draw(0);
 }
+function escapeHtml(s){ return String(s).replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
 
 // ---- atomspace graph (layered: facts -> rules -> recommendations) ---------------------------
 function buildAtoms(){

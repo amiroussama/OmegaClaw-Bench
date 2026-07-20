@@ -84,6 +84,44 @@ def _avg(xs):
     return round(sum(xs) / len(xs), 1) if xs else None
 
 
+# --------------------------------------------------------------------------- traces + snapshot (#2/#4)
+
+def _referenced_trace_ids(moves):
+    """Every trace_id referenced by a game's move records (pln + plain slots)."""
+    ids = set()
+    for mv in moves or []:
+        for arm in ("pln", "plain"):
+            for a in mv.get(arm) or []:
+                if a.get("trace_id"):
+                    ids.add(a["trace_id"])
+    return ids
+
+
+def _load_traces(traces_dir, trace_ids):
+    """Load only the referenced PLN trace records from ``traces_dir`` (bounds index.json size)."""
+    out = {}
+    for tid in trace_ids:
+        p = os.path.join(traces_dir, "%s.json" % tid)
+        if os.path.isfile(p):
+            try:
+                out[tid] = json.load(open(p, encoding="utf-8"))
+            except (ValueError, OSError):
+                pass
+    return out
+
+
+def _load_snapshot(run_dir):
+    """The per-run AtomSpace snapshot (Issue #2) if present, else None."""
+    for name in ("atomspace_latest.json",):
+        p = os.path.join(run_dir, name)
+        if os.path.isfile(p):
+            try:
+                return json.load(open(p, encoding="utf-8"))
+            except (ValueError, OSError):
+                return None
+    return None
+
+
 def _duel_game_from_raw(base_dir, subdir, pln_side):
     rows = [r for r in rs.load_jsonl(os.path.join(base_dir, subdir, "duel.jsonl")) if "side0" in r]
     if not rows:
@@ -104,9 +142,12 @@ def _duel_game_from_raw(base_dir, subdir, pln_side):
                           "recommendations": sp.get("recommendations") or []})
     pln_stats, plain_stats = _side_stats(rows, pln_i), _side_stats(rows, plain_i)
     winner = rs.territory_winner(pln_stats.get("final"), plain_stats.get("final"))
+    game_dir = os.path.join(base_dir, subdir)
+    traces = _load_traces(os.path.join(game_dir, "traces"), _referenced_trace_ids(moves))
     return {"subdir": subdir, "pln_side": pln_side,
             "trajectory": traj, "moves": moves,
             "stats": {"pln": pln_stats, "plain": plain_stats}, "winner": winner,
+            "traces": traces, "atomspace": _load_snapshot(game_dir),
             "moves_logged": bool(moves)}
 
 
@@ -181,8 +222,39 @@ def _ab_run(run_dir, run_id):
             "trajectory_all": {a: _pts(a) for a in arms},
             "stats_all": {a: stats.get(a) for a in arms},
             "winner": overall, "moves_logged": False}
+
+    # Per-unit moves + PLN traces come from the raw arm JSONL (comparison.json carries none), so an
+    # A/B run is inspectable — not just its aggregates. The pln slot = the contrast's chaining arm.
+    moves = _ab_moves(run_dir, a_name, b_name)
+    if moves:
+        game["moves"] = moves
+        game["moves_logged"] = True
+        game["traces"] = _load_traces(os.path.join(run_dir, "traces"), _referenced_trace_ids(moves))
+    game["atomspace"] = _load_snapshot(run_dir)
     return {"id": run_id, "type": "ab", "source": "comparison.json", "games": [game],
-            "arms": arms, "contrast": contrast, "verdict": verdict, "has_moves": False}
+            "arms": arms, "contrast": contrast, "verdict": verdict,
+            "has_moves": bool(game["moves_logged"])}
+
+
+def _ab_moves(run_dir, a_name, b_name):
+    """Per-turn moves for the A/B contrast, pln slot = ``a_name`` arm, plain slot = ``b_name``."""
+    def _by_turn(arm):
+        rows = {}
+        for r in rs.load_jsonl(os.path.join(run_dir, "%s.jsonl" % arm)):
+            if "metrics" not in r:
+                continue
+            rows[r.get("advanced_to") or r.get("turn")] = r
+        return rows
+    a_rows, b_rows = _by_turn(a_name), _by_turn(b_name)
+    turns = sorted(t for t in set(a_rows) | set(b_rows) if t is not None)
+    moves = []
+    for t in turns:
+        ar, br = a_rows.get(t, {}), b_rows.get(t, {})
+        pm, qm = ar.get("moves") or [], br.get("moves") or []
+        if pm or qm:
+            moves.append({"turn": t, "pln": pm, "plain": qm,
+                          "recommendations": ar.get("recommendations") or []})
+    return moves
 
 
 # --------------------------------------------------------------------------- fixtures (static KPI)

@@ -20,10 +20,17 @@ served — `serve.sh` runs the two generators below, then `python3 -m http.serve
   illegal-action rate, LLM/reasoning latency.
 - **Moves over time** — per-turn territory trajectories, plus (for runs with per-turn detail)
   actions proposed/blocked, PLN conclusions, and latency. Crosshair + tooltip on every chart.
-- **Per-unit moves** — for runs recorded after move-logging was added (`duel_sim.py`), a
-  per-turn table of each unit action (actor, action type, target, valid, PLN-recommended).
-- **Atomspace** — the PLN player's observed facts → rules → derived recommendations, drawn as a
-  fact→rule→recommendation graph, reconstructed offline from a captured state.
+- **Per-unit moves** — a per-turn table of each unit action (actor, action type, target, valid,
+  origin). **Click a row** to open its PLN derivation trace (premises → derived atoms with truth
+  values → recommendation, all from the recorded trace); actions with no PLN derivation are marked
+  **LLM-only** and cannot claim a derivation; invalid actions show the rejection code + reason and
+  the reasoning that led to them. A **turn-objective** panel summarizes the turn's PLN
+  recommendations (explicitly derived, not an authored strategy). Works on saved artifacts — no
+  live game needed.
+- **AtomSpace inspector** — when a run ships a snapshot (`atomspace_latest.json`), a lint banner
+  (missing categories, conflicting truth, game-law confidence, …) over atoms grouped by
+  provenance (observed / derived-heuristic / rule / inferred-PLN). Falls back to the offline
+  fact→rule→recommendation graph reconstructed from a captured state.
 
 ## Data generators (run by `serve.sh`, or standalone)
 
@@ -32,18 +39,21 @@ served — `serve.sh` runs the two generators below, then `python3 -m http.serve
   the raw (gitignored) `duel.jsonl` when present; falls back to the committed
   `comparison.json` / `duel_comparison.json` otherwise — so it still produces a useful page on a
   fresh checkout with no raw logs.
-- `dump_atoms.py` → `data/atoms.json`: reconstructs the atomspace from a captured state
-  (default `../samples/real_state_turn1.json`, override with `--state PATH`) via
-  `adapter → atoms → rules.metta`. Recommendations come from the real MeTTa/PLN engine
-  (`reason.derive`) in-container; on the host it uses a rule-match fallback over the firing
-  Inheritance rules (marked `source: host-fallback`).
+  `build_index.py` also ships, per run, the referenced PLN traces (`<run>/traces/*.json`, filtered
+  to the trace ids the moves reference) and the per-run AtomSpace snapshot
+  (`atomspace_latest.json`) so the page can open a trace and lint the atoms without a live game.
+- `dump_atoms.py` → `data/atoms.json` (+ `data/atomspace_snapshot.json`): reconstructs the
+  atomspace from a captured state (default `../samples/real_state_turn1.json`, override with
+  `--state PATH`) via `adapter → atoms → rules.metta`. Recommendations come from the real
+  MeTTa/PLN engine (`reason.derive`) in-container; on the host it uses a rule-match fallback over
+  the firing Inheritance rules (marked `source: host-fallback`).
 
 `data/` is regenerated from run artifacts and is **gitignored** — the committed record stays the
 compact `comparison.json` / `duel_comparison.json` files.
 
 ## Caveats surfaced in the UI
 
-- `score`, `gold`, `science` are always `0` (proxy-unavailable); verdicts rest on
-  cities/units/techs/survival.
+- `gold`/`score` are now read from the per-player block (real values); `science` remains
+  proxy-limited (often `0`). Verdicts rest on cities/units/techs/survival.
 - Older runs carry only per-turn aggregates — per-unit moves appear only on runs recorded after
   move-logging was added.
