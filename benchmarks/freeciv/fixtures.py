@@ -173,6 +173,41 @@ FIXTURES = [
             {"type": "unit_build_mine"},                                       # missing unit_id
         ],
     },
+    {
+        # Action-to-atom golden fixture (Issue #6): the full state -> fact -> rule ->
+        # recommendation -> action chain, using the RUNTIME type name "settlers" (lowercase)
+        # so the Type_settlers -> Settle rule actually fires — the older fixtures use the
+        # capitalized "Settler" (-> Type_Settler), which no rule matches. `expected` documents
+        # the atoms/recommendation/action the mapping must produce (see docs/atomspace-mapping.md
+        # §5); benchmark.py ignores the extra key.
+        "id": "pln_settler_to_found_city",
+        "category": "expansion",
+        "state": _state(
+            turn=3, player_perspective=1,
+            strategic={"relative_strength": "average"},
+            tactical={"unit_groups": {"settlers": {"count": 1, "positions": [[10, 10]], "avg_hp": 10}},
+                      "immediate_threats": []},
+            economic={"resources": {"gold": 15, "science": 2}},
+            players={"1": {"id": 1, "name": "Rome", "gold": 15, "score": 0}},
+            units={"301": {"id": 301, "type": "settlers", "owner": 1, "x": 10, "y": 10, "hp": 10}},
+            cities={},
+            techs={"player1": []},
+        ),
+        "legal": [
+            {"type": "unit_build_city", "unit_id": 301},   # settle now — the recommended action
+            {"type": "unit_move", "unit_id": 301, "dest_x": 11, "dest_y": 10},
+            {"type": "end_turn"},
+        ],
+        "illegal": [
+            {"type": "unit_build_city", "unit_id": 999},   # unknown unit
+            {"type": "unit_build_city"},                    # missing unit_id
+        ],
+        "expected": {
+            "atoms_subset": ["(Inheritance Unit_301 Type_settlers)"],
+            "recommendations": [{"entity": "Unit_301", "action": "Settle"}],
+            "recommended_action": {"type": "unit_build_city", "unit_id": 301},
+        },
+    },
 ]
 
 
