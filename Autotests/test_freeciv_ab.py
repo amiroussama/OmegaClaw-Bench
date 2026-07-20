@@ -52,7 +52,8 @@ _STATE = {
 def test_metrics_from_state():
     m = metrics.metrics_from_state(adapter.normalize_state(_STATE))
     assert m == {"turn": 1, "score": 7, "gold": 12, "science": 3,
-                 "n_cities": 1, "n_units": 2, "n_techs": 2}, m
+                 "n_cities": 1, "n_units": 2, "n_techs": 2,
+                 "tech_names": ["Alphabet", "Pottery"]}, m
 
 
 def test_render_plain_has_entities_but_no_pln_atoms():
