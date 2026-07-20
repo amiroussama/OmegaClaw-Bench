@@ -101,7 +101,9 @@ def _run_arm(arm, out_dir, monkey_reason=True):
     ab_sim.llm_agent.decide = lambda ctx, units, **kw: (
         [{"type": "unit_fortify", "unit_id": 7}], {"prompt_chars": len(ctx), "llm_ms": 5, "error": None})
     if monkey_reason:
-        ab_sim.reason.derive = lambda facts, timeout=30: ["(Recommend City_1 Defend)"]
+        ab_sim.reason.derive = lambda facts, **kw: ["(Recommend City_1 Defend)"]
+    # fact-proposal is a live-only LLM call; force it host-safe (no key) for the fact arms.
+    ab_sim.fact_proposer._KEY = ""
     # MockProxyWS.state() has no units by default -> _pregame would loop; give it our state
     _WS.state = lambda self: dict(_STATE, turn=self.turn)
     os.environ["FREECIV_GAME_ID"] = "ab_test_%s" % arm
@@ -139,6 +141,27 @@ def test_pln_arm_includes_reasoning():
         rows = _turn_rows(os.path.join(d, "pln.jsonl"))
         assert len(rows) >= 3
         assert all(r["n_conclusions"] >= 1 for r in rows)      # pln arm: derived conclusions present
+
+
+def test_facts_only_arm_has_facts_but_no_reasoning():
+    with tempfile.TemporaryDirectory() as d:
+        rc = _run_arm("facts-only", d)
+        assert rc == 0
+        rows = _turn_rows(os.path.join(d, "facts-only.jsonl"))
+        assert len(rows) >= 3
+        # facts arm gets the extra proposal call (0 facts host-side, no key) but NO PLN reasoning
+        assert all(r["n_conclusions"] == 0 for r in rows)
+        assert all(r["n_llm_facts"] == 0 for r in rows)        # no key on host -> best-effort []
+        assert all("n_llm_facts" in r and "fact_llm_ms" in r for r in rows)
+
+
+def test_facts_chaining_arm_includes_reasoning():
+    with tempfile.TemporaryDirectory() as d:
+        rc = _run_arm("facts+chaining", d)
+        assert rc == 0
+        rows = _turn_rows(os.path.join(d, "facts+chaining.jsonl"))
+        assert len(rows) >= 3
+        assert all(r["n_conclusions"] >= 1 for r in rows)      # chaining arm: derived conclusions
 
 
 if __name__ == "__main__":

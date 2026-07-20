@@ -115,6 +115,24 @@ def derive(fact_sentences, timeout=30):
     return recs
 
 
+def format_facts_for_llm(fact_sentences, limit=40):
+    """Render observed fact sentences as a compact premise block (empty string if none).
+
+    Used by BOTH fact arms (``facts-only`` and ``facts+chaining``) so the ONLY difference between
+    them is the PLN engine, not the observations shown to the LLM. Facts are shown as the symbolic
+    premises the reasoner consumes, framed as context (not instructions).
+    """
+    facts = [f.strip() for f in (fact_sentences or []) if f and f.strip()]
+    if not facts:
+        return ""
+    lines = ["OBSERVED FACTS (symbolic premises — context, not a to-do list):"]
+    for s in facts[:limit]:
+        lines.append("  - {}".format(s))
+    if len(facts) > limit:
+        lines.append("  ... (+%d more)" % (len(facts) - limit))
+    return "\n".join(lines)
+
+
 def format_for_llm(recommendations):
     """Render derived recommendations as a concise prompt block (empty string if none).
 
