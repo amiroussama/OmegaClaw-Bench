@@ -110,7 +110,8 @@ def _context(arm, norm):
     """
     plain = llm_agent.render_plain(norm)
     extra = {"reason_ms": None, "recs": [], "n_conclusions": 0, "hops": 0,
-             "n_grounded": 0, "n_llm_facts": 0, "fact_llm_ms": None}
+             "n_grounded": 0, "n_llm_facts": 0, "fact_llm_ms": None,
+             "trace": None, "trace_id": None}
     if not _is_fact_arm(arm):
         return plain, extra
 
@@ -125,13 +126,17 @@ def _context(arm, norm):
     if not _uses_chaining(arm):
         return ctx, extra
 
-    # facts+chaining: PLN multi-hop over the merged facts -> grounded, specific recommendations
+    # facts+chaining: PLN multi-hop over the merged facts -> grounded, specific recommendations.
+    # derive_traced records the derivation proactively (Issue #3): a PlnTrace captured at decision
+    # time, later saved by run() and linked from the per-turn record + move records.
     t0 = time.time()
-    recs, rmeta = reason.derive(facts, return_meta=True)
+    recs, trace = reason.derive_traced(facts, context={"arm": arm})
     extra["reason_ms"] = int((time.time() - t0) * 1000)
     extra["recs"] = recs
-    extra["n_conclusions"] = rmeta.get("n_conclusions", len(recs))
-    extra["hops"] = rmeta.get("hops", 0)
+    extra["n_conclusions"] = len(recs)
+    extra["hops"] = len(trace.hops) if trace is not None else 0
+    extra["trace"] = trace
+    extra["trace_id"] = trace.trace_id if trace is not None else None
     grounded = [ground.ground(r, norm) for r in recs]   # concrete, legality-checked (None if no fit)
     extra["n_grounded"] = sum(1 for g in grounded if g)  # already re-validated -> grounded == legal
     block = reason.format_for_llm(recs, grounded=grounded)
@@ -168,6 +173,12 @@ async def run(arm, seed, hours, max_turns, out_dir):
                 recs = extra["recs"]
                 reason_ms = extra["reason_ms"]
                 n_conc = extra["n_conclusions"]
+                trace_id = extra.get("trace_id")
+                if extra.get("trace") is not None:
+                    try:
+                        extra["trace"].save(os.path.join(out_dir, "traces"))
+                    except Exception:  # noqa: BLE001 - tracing is best-effort; never break the arm
+                        pass
                 recommendations, rec_ents = duel_sim._parse_recs(recs)
                 mine = [u for u in norm["units"] if u.get("owner") == norm["player_perspective"]]
                 acts, meta = llm_agent.decide(ctx, mine)
@@ -176,13 +187,13 @@ async def run(arm, seed, hours, max_turns, out_dir):
                 for a in acts:
                     proposed += 1
                     na = actions.normalize_action(a)
-                    valid = actions.validate_action(a, st).is_valid
-                    if valid:
+                    v = actions.validate_action(a, st)
+                    if v.is_valid:
                         await ws.send(json.dumps(client.action_message(na)))
                         submitted += 1
                     else:
                         blocked += 1
-                    moves.append(duel_sim._move_record(na, valid, rec_ents))
+                    moves.append(duel_sim._move_record(na, v, rec_ents, trace_id=trace_id))
                 await turncycle.send_end_turn(ws)
                 nt = await turncycle.await_turn_advance(ws, cur, timeout=45)
                 if meta.get("error"):
@@ -195,7 +206,8 @@ async def run(arm, seed, hours, max_turns, out_dir):
                        "n_llm_facts": extra["n_llm_facts"], "fact_llm_ms": extra["fact_llm_ms"],
                        "hops": extra["hops"], "n_grounded": extra["n_grounded"],
                        "prompt_chars": meta.get("prompt_chars"), "llm_error": meta.get("error"),
-                       "moves": moves, "recommendations": recommendations}
+                       "moves": moves, "recommendations": recommendations,
+                       "pln_trace_id": trace_id}
                 _log(out_dir, arm, rec)
                 if nt is not None:
                     totals["turns_advanced"] += 1; turns_seen.append(nt); stalls = 0
