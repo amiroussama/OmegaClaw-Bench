@@ -60,6 +60,14 @@ def _uses_chaining(arm):
     return arm in ("facts+chaining", "pln")
 
 
+def _agent_id(arm):
+    """Proxy-safe agent id for an arm. The proxy enforces ``^[a-zA-Z0-9_-]+$`` on agent_id, so the
+    ``+`` in ``facts+chaining`` must be sanitized (else llm_connect is rejected with E223 and no
+    game ever binds)."""
+    import re
+    return "omega-" + re.sub(r"[^a-zA-Z0-9_-]", "-", arm)
+
+
 def _log(out_dir, arm, record):
     record["ts"] = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
     record["arm"] = arm
@@ -76,7 +84,7 @@ def _heartbeat(out_dir, arm, **kv):
 
 async def _connect(ws_mod, arm):
     ws = await ws_mod.connect(WS, open_timeout=30, max_size=None, ping_interval=None)
-    await ws.send(json.dumps({"type": "llm_connect", "agent_id": "omega-%s" % arm, "api_token": TOKEN,
+    await ws.send(json.dumps({"type": "llm_connect", "agent_id": _agent_id(arm), "api_token": TOKEN,
                               "game_id": os.environ["FREECIV_GAME_ID"], "nation": "Romans",
                               "leader_name": "Caesar"}))
     await turncycle.recv_until(ws, {"auth_success"}, timeout=40)
