@@ -13,6 +13,8 @@ import os
 import sys
 import time
 
+import metrics
+
 ARMS = ("pln", "plain")
 
 
@@ -61,6 +63,11 @@ def _arm_stats(out_dir, arm):
     blocked = sum(r.get("blocked", 0) for r in tr)
     submitted = sum(r.get("submitted", 0) for r in tr)
     advanced = sum(1 for r in tr if r.get("advanced_to") is not None)
+    # era progression + PLN action quality over the per-turn records
+    traj = [{"turn": r.get("advanced_to") or r.get("turn"), **r.get("metrics", {})} for r in tr]
+    era = metrics.era_progression(traj)
+    quality = metrics.pln_quality([{"moves": r.get("moves") or [],
+                                    "recommendations": r.get("recommendations") or []} for r in tr])
     return {
         "arm": arm,
         "turns_logged": len(tr),
@@ -70,6 +77,7 @@ def _arm_stats(out_dir, arm):
         "n_cities": lm.get("n_cities"), "n_units": lm.get("n_units"), "n_techs": lm.get("n_techs"),
         "proposed": proposed, "submitted": submitted, "blocked": blocked,
         "illegal_rate": round(blocked / proposed, 3) if proposed else 0.0,
+        "avg_actions_per_turn": round(proposed / len(tr), 2) if tr else None,
         "avg_llm_ms": _avg([r.get("llm_ms") for r in tr]),
         "avg_reason_ms": _avg([r.get("reason_ms") for r in tr]),
         "avg_conclusions": _avg([r.get("n_conclusions") for r in tr]),
@@ -78,6 +86,10 @@ def _arm_stats(out_dir, arm):
         "heartbeat_age_s": _heartbeat_age(out_dir, arm),
         "peak_score": max([m for m in (r.get("metrics", {}).get("score") for r in tr)
                            if isinstance(m, (int, float))] or [None]) if tr else None,
+        "era": era,
+        "turns_to_tech_4": era["turns_to_tech_count"].get("4"),
+        "pln_action_success_rate": quality["pln_action_success_rate"],
+        "rec_adoption_rate": quality["rec_adoption_rate"],
     }
 
 
@@ -133,7 +145,8 @@ def final(out_dir):
     verdict = {"final_score": better("score"), "peak_score": better("peak_score"),
                "cities": better("n_cities"), "techs": better("n_techs"),
                "turns_advanced": better("turns_advanced"),
-               "illegal_rate": better("illegal_rate", hi=False)}
+               "illegal_rate": better("illegal_rate", hi=False),
+               "turns_to_tech_4": better("turns_to_tech_4", hi=False)}
     wins = {"pln": 0, "plain": 0}
     for v in verdict.values():
         if v in wins:
@@ -147,9 +160,12 @@ def final(out_dir):
 
     rows = [("Final score", "score"), ("Peak score", "peak_score"), ("Cities", "n_cities"),
             ("Units", "n_units"), ("Techs", "n_techs"), ("Last turn", "last_turn"),
-            ("Turns advanced", "turns_advanced"), ("Illegal-action rate", "illegal_rate"),
+            ("Turns advanced", "turns_advanced"), ("Turns to 4 techs", "turns_to_tech_4"),
+            ("Illegal-action rate", "illegal_rate"), ("Avg actions/turn", "avg_actions_per_turn"),
             ("Avg LLM ms", "avg_llm_ms"), ("Avg reason ms", "avg_reason_ms"),
-            ("Avg PLN conclusions/turn", "avg_conclusions"), ("LLM errors", "llm_errors")]
+            ("Avg PLN conclusions/turn", "avg_conclusions"),
+            ("PLN action success rate", "pln_action_success_rate"),
+            ("Rec adoption rate", "rec_adoption_rate"), ("LLM errors", "llm_errors")]
     md = ["# FreeCiv A/B — PLN (OmegaClaw) vs plain-LLM", "",
           "Same model/provider/seed/validation; only the state representation differs "
           "(pln = plain facts + MeTTa/PLN-derived recommendations; plain = plain facts only).", "",
@@ -158,6 +174,7 @@ def final(out_dir):
         winner = {"score": verdict["final_score"], "peak_score": verdict["peak_score"],
                   "n_cities": verdict["cities"], "n_techs": verdict["techs"],
                   "turns_advanced": verdict["turns_advanced"],
+                  "turns_to_tech_4": verdict["turns_to_tech_4"],
                   "illegal_rate": verdict["illegal_rate"]}.get(key, "")
         md.append("| %s | %s | %s | %s |" % (label, s["pln"].get(key), s["plain"].get(key), winner))
     md += ["", "**Verdict:** %s (pln won %d, plain won %d of %d tracked metrics)."

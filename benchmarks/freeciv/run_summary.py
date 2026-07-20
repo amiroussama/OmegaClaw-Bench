@@ -22,6 +22,8 @@ Stdlib only.
 import json
 import os
 
+import metrics
+
 _METRIC_KEYS = ("n_cities", "n_units", "n_techs")
 
 
@@ -59,12 +61,15 @@ def _last_epoch(records, turn_of):
     return records[start:]
 
 
-def summarize_side(records, turn_of, metrics_of, proposed_of, nconc_of):
+def summarize_side(records, turn_of, metrics_of, proposed_of, nconc_of,
+                   moves_of=None, recs_of=None):
     """Summarize one competitor's series. Returns None if it never carried metrics.
 
     Uses the last epoch, ignores plateau-tail records with no metrics, and reports the last
     real standing (``final``), the ``peak`` over the epoch, ``plateau_turn`` (last real turn),
-    and anchoring stats (avg actions/turn, % of turns where proposed == recommendations).
+    anchoring stats (avg actions/turn, % of turns where proposed == recommendations), and an
+    ``era`` progression block (Issue #5). When ``moves_of`` is supplied, PLN action-quality
+    metrics (pln_action_success_rate, rec_adoption_rate) are added from the per-move records.
     """
     ep = _last_epoch(records, turn_of)
     # A usable record has BOTH a real turn (>0) and metrics: the plateau tail logs stale reads
@@ -80,7 +85,15 @@ def summarize_side(records, turn_of, metrics_of, proposed_of, nconc_of):
              if isinstance(proposed_of(r), (int, float))
              and proposed_of(r) == nconc_of(r))
     n = len(withm)
-    return {
+
+    # era progression over the epoch (turn + n_techs + tech_names from each metrics record)
+    traj = []
+    for r in withm:
+        m = metrics_of(r) or {}
+        traj.append({"turn": turn_of(r) or m.get("turn"),
+                     "n_techs": m.get("n_techs"), "tech_names": m.get("tech_names")})
+
+    out = {
         "final": {k: int(last.get(k) or 0) for k in _METRIC_KEYS},
         "peak": peak,
         "plateau_turn": turn_of(withm[-1]),
@@ -88,7 +101,13 @@ def summarize_side(records, turn_of, metrics_of, proposed_of, nconc_of):
         "avg_proposed": round(sum(proposed) / len(proposed), 2) if proposed else None,
         "avg_conclusions": round(sum(nconc) / len(nconc), 2) if nconc else None,
         "pct_actions_eq_recs": round(100.0 * eq / n, 1) if n else None,
+        "era": metrics.era_progression(traj),
     }
+    if moves_of is not None:
+        bundles = [{"moves": moves_of(r) or [],
+                    "recommendations": (recs_of(r) if recs_of else []) or []} for r in withm]
+        out.update(metrics.pln_quality(bundles))
+    return out
 
 
 def territory_winner(pln_final, plain_final):

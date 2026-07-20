@@ -140,6 +140,73 @@ def test_pln_quality_empty():
     assert q["pln_action_success_rate"] is None and q["rec_adoption_rate"] is None
 
 
+# --- reporter export (era + PLN quality land in comparison JSON) ------------
+
+import tempfile  # noqa: E402
+
+_FREECIV = os.path.join(_BENCHMARKS, "freeciv")
+if _FREECIV not in sys.path:
+    sys.path.insert(0, _FREECIV)
+
+
+def _ab_row(turn, techs, tech_names, moves, recs):
+    return {"turn": turn, "advanced_to": turn,
+            "metrics": {"turn": turn, "score": turn, "gold": 10, "science": 1,
+                        "n_cities": 1, "n_units": 2, "n_techs": techs, "tech_names": tech_names},
+            "proposed": len(moves), "submitted": len(moves), "blocked": 0,
+            "n_conclusions": len(recs), "moves": moves, "recommendations": recs}
+
+
+def test_ab_report_final_exports_era_and_quality():
+    import ab_report
+    mv = [{"actor": 7, "actor_kind": "unit_id", "pln_recommended": True, "valid": True}]
+    rec = [{"entity": "Unit_7", "action": "Settle"}]
+    with tempfile.TemporaryDirectory() as d:
+        pln = [_ab_row(1, 0, [], mv, rec), _ab_row(3, 4, ["A", "B", "Currency", "D"], mv, rec)]
+        plain = [_ab_row(1, 0, [], [], []), _ab_row(5, 2, ["A", "B"], [], [])]
+        with open(os.path.join(d, "pln.jsonl"), "w") as f:
+            f.write("\n".join(json.dumps(r) for r in pln))
+        with open(os.path.join(d, "plain.jsonl"), "w") as f:
+            f.write("\n".join(json.dumps(r) for r in plain))
+        ab_report.final(d)
+        c = json.load(open(os.path.join(d, "comparison.json")))
+        assert c["stats"]["pln"]["era"]["turns_to_tech_count"]["4"] == 3
+        assert c["stats"]["pln"]["turns_to_tech_4"] == 3
+        assert "turns_to_tech_4" in c["verdict"]
+        assert c["stats"]["pln"]["pln_action_success_rate"] == 1.0
+        assert c["stats"]["pln"]["rec_adoption_rate"] == 1.0
+        assert c["stats"]["pln"]["avg_actions_per_turn"] == 1.0
+
+
+def test_duel_report_final_exports_era_and_quality():
+    import duel_report
+
+    def side(techs, tech_names, moves, recs):
+        return {"arm": "pln", "metrics": {"turn": 0, "n_cities": 1, "n_units": 2,
+                                          "n_techs": techs, "tech_names": tech_names},
+                "proposed": len(moves), "n_conclusions": len(recs),
+                "moves": moves, "recommendations": recs}
+
+    mv = [{"actor": 7, "actor_kind": "unit_id", "pln_recommended": True, "valid": True}]
+    rec = [{"entity": "Unit_7", "action": "Settle"}]
+    with tempfile.TemporaryDirectory() as base:
+        g1 = os.path.join(base, "g1")
+        os.makedirs(g1)
+        rows = [
+            {"turn": 1, "side0": side(0, [], mv, rec), "side1": side(0, [], [], [])},
+            {"turn": 4, "side0": side(4, ["A", "B", "Currency", "D"], mv, rec),
+             "side1": side(2, ["A", "B"], [], [])},
+        ]
+        with open(os.path.join(g1, "duel.jsonl"), "w") as f:
+            f.write("\n".join(json.dumps(r) for r in rows))
+        duel_report.report(base, final=True)
+        c = json.load(open(os.path.join(base, "duel_comparison.json")))
+        g = c["games"][0]
+        assert g["pln"]["era"]["turns_to_tech_count"]["4"] == 4
+        assert g["pln"]["pln_action_success_rate"] == 1.0
+        assert g["winner_arm"] == "pln"
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     for fn in fns:

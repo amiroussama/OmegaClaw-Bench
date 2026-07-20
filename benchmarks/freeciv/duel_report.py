@@ -38,6 +38,8 @@ def _side_summary(rows, side_idx):
         metrics_of=lambda r, i=side_idx: (_side(r, i) or {}).get("metrics"),
         proposed_of=lambda r, i=side_idx: (_side(r, i) or {}).get("proposed"),
         nconc_of=lambda r, i=side_idx: (_side(r, i) or {}).get("n_conclusions"),
+        moves_of=lambda r, i=side_idx: (_side(r, i) or {}).get("moves"),
+        recs_of=lambda r, i=side_idx: (_side(r, i) or {}).get("recommendations"),
     )
 
 
@@ -93,6 +95,16 @@ def _render(base, games, source):
             _fmt(pln and pln["final"]),
             ("   [%.2f actions/turn, %.0f%% == recs]" % (pln["avg_proposed"], pln["pct_actions_eq_recs"])
              if pln and pln.get("avg_proposed") is not None else "")))
+        if pln:
+            t2t4 = (pln.get("era") or {}).get("turns_to_tech_count", {}).get("4")
+            succ = pln.get("pln_action_success_rate")
+            extra = []
+            if t2t4 is not None:
+                extra.append("turns→4 techs: %s" % t2t4)
+            if succ is not None:
+                extra.append("PLN action success: %.0f%%" % (100 * succ))
+            if extra:
+                lines.append("           (%s)" % ", ".join(extra))
         lines.append("     plain %s" % _fmt(plain and plain["final"]))
     lines.append("")
     if pln_wins == 2:
