@@ -38,7 +38,11 @@ if _BENCH not in sys.path:
     sys.path.insert(0, _BENCH)
 
 from freeciv import (adapter, atoms, actions, client, turncycle, metrics, llm_agent, reason,  # noqa: E402
-                     duel_sim, fact_proposer, ground)
+                     duel_sim, fact_proposer, ground, atomspace_export)
+
+# Per-run AtomSpace snapshot artifact (Issue #2); default on, disable with FREECIV_ATOMSPACE_SNAPSHOT=0.
+_SNAPSHOT = (os.environ.get("FREECIV_ATOMSPACE_SNAPSHOT", "1").strip().lower()
+             not in {"0", "false", "no", "off"})
 
 WS = os.environ.get("FREECIV_PROXY_WS", "ws://localhost:8002/llmsocket/8002")
 TOKEN = os.environ.get("FREECIV_API_TOKEN", "test-token-fc3d-001")
@@ -178,6 +182,11 @@ async def run(arm, seed, hours, max_turns, out_dir):
                     try:
                         extra["trace"].save(os.path.join(out_dir, "traces"))
                     except Exception:  # noqa: BLE001 - tracing is best-effort; never break the arm
+                        pass
+                if _SNAPSHOT and _is_fact_arm(arm):
+                    try:
+                        atomspace_export.write_run_snapshot(out_dir, st, recs, cur)
+                    except Exception:  # noqa: BLE001 - snapshot is best-effort
                         pass
                 recommendations, rec_ents = duel_sim._parse_recs(recs)
                 mine = [u for u in norm["units"] if u.get("owner") == norm["player_perspective"]]

@@ -233,6 +233,19 @@ def test_plain_arm_has_no_trace_ids():
         for r in rows:
             assert all(mv.get("trace_id") is None for mv in r["moves"])
         assert not os.path.isdir(os.path.join(d, "traces"))
+        assert not os.path.isfile(os.path.join(d, "atomspace_latest.json"))  # no snapshot either
+
+
+def test_pln_arm_writes_atomspace_snapshot():
+    """The PLN arm emits a per-run AtomSpace snapshot artifact (Issue #2)."""
+    with tempfile.TemporaryDirectory() as d:
+        assert _run_arm("pln", d) == 0
+        snap_path = os.path.join(d, "atomspace_latest.json")
+        assert os.path.isfile(snap_path)
+        snap = json.loads(open(snap_path, encoding="utf-8").read())
+        assert snap["schema_version"] == 1
+        assert snap["counts"].get("observed", 0) > 0
+        assert "lint" in snap and "findings" in snap["lint"]
 
 
 def test_move_record_carries_error_code_and_trace_id():

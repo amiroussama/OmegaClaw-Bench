@@ -104,6 +104,15 @@ def main():
         json.dump(payload, f, indent=2)
     print("wrote %s — %d facts, %d recommendations (source=%s)" %
           (args.out, payload["n_facts"], payload["n_recommendations"], payload["source"]))
+
+    # Also emit the full AtomSpace snapshot (Issue #2) next to atoms.json for the inspector UI.
+    from freeciv import atomspace_export
+    raw = json.load(open(args.state, encoding="utf-8"))
+    snap = atomspace_export.snapshot_from_state(raw, state_file=os.path.relpath(args.state, _BENCH))
+    snap_out = os.path.join(os.path.dirname(args.out), "atomspace_snapshot.json")
+    atomspace_export.write_snapshot(snap, snap_out)
+    print("wrote %s — %s atoms, lint %s" %
+          (snap_out, sum(snap["counts"].values()), "OK" if snap["lint"]["ok"] else "ISSUES"))
     return 0
 
 

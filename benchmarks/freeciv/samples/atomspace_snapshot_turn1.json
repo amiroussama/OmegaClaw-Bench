@@ -1,0 +1,547 @@
+{
+  "atoms": [
+    {
+      "category": "resources",
+      "id": "f001",
+      "kind": "fact",
+      "obj": "Gold:50",
+      "origin": "adapter",
+      "pred": "Evaluation",
+      "provenance": "observed",
+      "sentence": "((Evaluation (Predicate Gold) (List Player_0 50)) (stv 1.0 0.99))",
+      "statement": "(Evaluation (Predicate Gold) (List Player_0 50))",
+      "stv": {
+        "c": 0.99,
+        "f": 1.0
+      },
+      "subj": "Player_0",
+      "type": "Evaluation"
+    },
+    {
+      "category": "resources",
+      "id": "f002",
+      "kind": "fact",
+      "obj": "Science:0",
+      "origin": "adapter",
+      "pred": "Evaluation",
+      "provenance": "observed",
+      "sentence": "((Evaluation (Predicate Science) (List Player_0 0)) (stv 1.0 0.99))",
+      "statement": "(Evaluation (Predicate Science) (List Player_0 0))",
+      "stv": {
+        "c": 0.99,
+        "f": 1.0
+      },
+      "subj": "Player_0",
+      "type": "Evaluation"
+    },
+    {
+      "category": "strategic",
+      "id": "f003",
+      "kind": "fact",
+      "obj": "Score:0",
+      "origin": "adapter",
+      "pred": "Evaluation",
+      "provenance": "observed",
+      "sentence": "((Evaluation (Predicate Score) (List Player_0 0)) (stv 1.0 0.99))",
+      "statement": "(Evaluation (Predicate Score) (List Player_0 0))",
+      "stv": {
+        "c": 0.99,
+        "f": 1.0
+      },
+      "subj": "Player_0",
+      "type": "Evaluation"
+    },
+    {
+      "category": "techs",
+      "id": "f004",
+      "kind": "fact",
+      "obj": "Researched",
+      "origin": "adapter",
+      "pred": "Inheritance",
+      "provenance": "observed",
+      "sentence": "((Inheritance Tech_AdvancedFlight Researched) (stv 1.0 0.99))",
+      "statement": "(Inheritance Tech_AdvancedFlight Researched)",
+      "stv": {
+        "c": 0.99,
+        "f": 1.0
+      },
+      "subj": "Tech_AdvancedFlight",
+      "type": "Inheritance"
+    },
+    {
+      "category": "units",
+      "id": "f005",
+      "kind": "fact",
+      "obj": "At:14:42",
+      "origin": "adapter",
+      "pred": "Evaluation",
+      "provenance": "observed",
+      "sentence": "((Evaluation (Predicate At) (List Unit_102 14 42)) (stv 1.0 0.99))",
+      "statement": "(Evaluation (Predicate At) (List Unit_102 14 42))",
+      "stv": {
+        "c": 0.99,
+        "f": 1.0
+      },
+      "subj": "Unit_102",
+      "type": "Evaluation"
+    },
+    {
+      "category": "units",
+      "id": "f006",
+      "kind": "fact",
+      "obj": "Type_settlers",
+      "origin": "adapter",
+      "pred": "Inheritance",
+      "provenance": "observed",
+      "sentence": "((Inheritance Unit_102 Type_settlers) (stv 1.0 0.99))",
+      "statement": "(Inheritance Unit_102 Type_settlers)",
+      "stv": {
+        "c": 0.99,
+        "f": 1.0
+      },
+      "subj": "Unit_102",
+      "type": "Inheritance"
+    },
+    {
+      "category": "units",
+      "id": "f007",
+      "kind": "fact",
+      "obj": "At:12:40",
+      "origin": "adapter",
+      "pred": "Evaluation",
+      "provenance": "observed",
+      "sentence": "((Evaluation (Predicate At) (List Unit_110 12 40)) (stv 1.0 0.99))",
+      "statement": "(Evaluation (Predicate At) (List Unit_110 12 40))",
+      "stv": {
+        "c": 0.99,
+        "f": 1.0
+      },
+      "subj": "Unit_110",
+      "type": "Evaluation"
+    },
+    {
+      "category": "units",
+      "id": "f008",
+      "kind": "fact",
+      "obj": "Type_settlers",
+      "origin": "adapter",
+      "pred": "Inheritance",
+      "provenance": "observed",
+      "sentence": "((Inheritance Unit_110 Type_settlers) (stv 1.0 0.99))",
+      "statement": "(Inheritance Unit_110 Type_settlers)",
+      "stv": {
+        "c": 0.99,
+        "f": 1.0
+      },
+      "subj": "Unit_110",
+      "type": "Inheritance"
+    },
+    {
+      "category": "units",
+      "id": "f009",
+      "kind": "fact",
+      "obj": "At:16:41",
+      "origin": "adapter",
+      "pred": "Evaluation",
+      "provenance": "observed",
+      "sentence": "((Evaluation (Predicate At) (List Unit_111 16 41)) (stv 1.0 0.99))",
+      "statement": "(Evaluation (Predicate At) (List Unit_111 16 41))",
+      "stv": {
+        "c": 0.99,
+        "f": 1.0
+      },
+      "subj": "Unit_111",
+      "type": "Evaluation"
+    },
+    {
+      "category": "units",
+      "id": "f010",
+      "kind": "fact",
+      "obj": "Type_settlers",
+      "origin": "adapter",
+      "pred": "Inheritance",
+      "provenance": "observed",
+      "sentence": "((Inheritance Unit_111 Type_settlers) (stv 1.0 0.99))",
+      "statement": "(Inheritance Unit_111 Type_settlers)",
+      "stv": {
+        "c": 0.99,
+        "f": 1.0
+      },
+      "subj": "Unit_111",
+      "type": "Inheritance"
+    },
+    {
+      "category": "units",
+      "id": "f011",
+      "kind": "fact",
+      "obj": "At:13:42",
+      "origin": "adapter",
+      "pred": "Evaluation",
+      "provenance": "observed",
+      "sentence": "((Evaluation (Predicate At) (List Unit_112 13 42)) (stv 1.0 0.99))",
+      "statement": "(Evaluation (Predicate At) (List Unit_112 13 42))",
+      "stv": {
+        "c": 0.99,
+        "f": 1.0
+      },
+      "subj": "Unit_112",
+      "type": "Evaluation"
+    },
+    {
+      "category": "units",
+      "id": "f012",
+      "kind": "fact",
+      "obj": "Type_workers",
+      "origin": "adapter",
+      "pred": "Inheritance",
+      "provenance": "observed",
+      "sentence": "((Inheritance Unit_112 Type_workers) (stv 1.0 0.99))",
+      "statement": "(Inheritance Unit_112 Type_workers)",
+      "stv": {
+        "c": 0.99,
+        "f": 1.0
+      },
+      "subj": "Unit_112",
+      "type": "Inheritance"
+    },
+    {
+      "category": "units",
+      "id": "f013",
+      "kind": "fact",
+      "obj": "At:15:41",
+      "origin": "adapter",
+      "pred": "Evaluation",
+      "provenance": "observed",
+      "sentence": "((Evaluation (Predicate At) (List Unit_113 15 41)) (stv 1.0 0.99))",
+      "statement": "(Evaluation (Predicate At) (List Unit_113 15 41))",
+      "stv": {
+        "c": 0.99,
+        "f": 1.0
+      },
+      "subj": "Unit_113",
+      "type": "Evaluation"
+    },
+    {
+      "category": "units",
+      "id": "f014",
+      "kind": "fact",
+      "obj": "Type_workers",
+      "origin": "adapter",
+      "pred": "Inheritance",
+      "provenance": "observed",
+      "sentence": "((Inheritance Unit_113 Type_workers) (stv 1.0 0.99))",
+      "statement": "(Inheritance Unit_113 Type_workers)",
+      "stv": {
+        "c": 0.99,
+        "f": 1.0
+      },
+      "subj": "Unit_113",
+      "type": "Inheritance"
+    },
+    {
+      "category": "units",
+      "id": "f015",
+      "kind": "fact",
+      "obj": "At:14:42",
+      "origin": "adapter",
+      "pred": "Evaluation",
+      "provenance": "observed",
+      "sentence": "((Evaluation (Predicate At) (List Unit_114 14 42)) (stv 1.0 0.99))",
+      "statement": "(Evaluation (Predicate At) (List Unit_114 14 42))",
+      "stv": {
+        "c": 0.99,
+        "f": 1.0
+      },
+      "subj": "Unit_114",
+      "type": "Evaluation"
+    },
+    {
+      "category": "units",
+      "id": "f016",
+      "kind": "fact",
+      "obj": "Type_workers",
+      "origin": "adapter",
+      "pred": "Inheritance",
+      "provenance": "observed",
+      "sentence": "((Inheritance Unit_114 Type_workers) (stv 1.0 0.99))",
+      "statement": "(Inheritance Unit_114 Type_workers)",
+      "stv": {
+        "c": 0.99,
+        "f": 1.0
+      },
+      "subj": "Unit_114",
+      "type": "Inheritance"
+    },
+    {
+      "category": "units",
+      "id": "f017",
+      "kind": "fact",
+      "obj": "At:12:42",
+      "origin": "adapter",
+      "pred": "Evaluation",
+      "provenance": "observed",
+      "sentence": "((Evaluation (Predicate At) (List Unit_115 12 42)) (stv 1.0 0.99))",
+      "statement": "(Evaluation (Predicate At) (List Unit_115 12 42))",
+      "stv": {
+        "c": 0.99,
+        "f": 1.0
+      },
+      "subj": "Unit_115",
+      "type": "Evaluation"
+    },
+    {
+      "category": "units",
+      "id": "f018",
+      "kind": "fact",
+      "obj": "Type_caravan",
+      "origin": "adapter",
+      "pred": "Inheritance",
+      "provenance": "observed",
+      "sentence": "((Inheritance Unit_115 Type_caravan) (stv 1.0 0.99))",
+      "statement": "(Inheritance Unit_115 Type_caravan)",
+      "stv": {
+        "c": 0.99,
+        "f": 1.0
+      },
+      "subj": "Unit_115",
+      "type": "Inheritance"
+    },
+    {
+      "action": "Defend",
+      "category": "rule",
+      "fires_on_host_engine": true,
+      "form": "inheritance",
+      "id": "r001",
+      "is_game_law": false,
+      "kind": "rule",
+      "origin": "rules.metta",
+      "provenance": "rule",
+      "statement": "(Implication (Inheritance $c Undefended) (Recommend $c Defend))",
+      "stv": {
+        "c": 0.8,
+        "f": 0.9
+      },
+      "type": "Implication"
+    },
+    {
+      "action": "Food",
+      "category": "rule",
+      "fires_on_host_engine": true,
+      "form": "inheritance",
+      "id": "r002",
+      "is_game_law": false,
+      "kind": "rule",
+      "origin": "rules.metta",
+      "provenance": "rule",
+      "statement": "(Implication (Inheritance $c LowFood) (Recommend $c Food))",
+      "stv": {
+        "c": 0.8,
+        "f": 0.9
+      },
+      "type": "Implication"
+    },
+    {
+      "action": "Settle",
+      "category": "rule",
+      "fires_on_host_engine": true,
+      "form": "inheritance",
+      "id": "r003",
+      "is_game_law": false,
+      "kind": "rule",
+      "origin": "rules.metta",
+      "provenance": "rule",
+      "statement": "(Implication (Inheritance $u Type_settlers) (Recommend $u Settle))",
+      "stv": {
+        "c": 0.7,
+        "f": 0.8
+      },
+      "type": "Implication"
+    },
+    {
+      "action": "Retreat",
+      "category": "rule",
+      "fires_on_host_engine": false,
+      "form": "evaluation",
+      "id": "r004",
+      "is_game_law": false,
+      "kind": "rule",
+      "origin": "rules.metta",
+      "provenance": "rule",
+      "statement": "(Implication (Evaluation (Predicate Threatens) (List $e $t)) (Recommend $t Retreat))",
+      "stv": {
+        "c": 0.75,
+        "f": 0.85
+      },
+      "type": "Implication"
+    },
+    {
+      "action": "BuildDefender",
+      "category": "rule",
+      "fires_on_host_engine": false,
+      "form": "other",
+      "id": "r005",
+      "is_game_law": false,
+      "kind": "rule",
+      "origin": "rules.metta",
+      "provenance": "rule",
+      "statement": "(Implication (Priority $c Military) (Recommend $c BuildDefender))",
+      "stv": {
+        "c": 0.9,
+        "f": 0.9
+      },
+      "type": "Implication"
+    },
+    {
+      "action": "Irrigate",
+      "category": "rule",
+      "fires_on_host_engine": false,
+      "form": "other",
+      "id": "r006",
+      "is_game_law": false,
+      "kind": "rule",
+      "origin": "rules.metta",
+      "provenance": "rule",
+      "statement": "(Implication (State $c NeedsGrowth) (Recommend $c Irrigate))",
+      "stv": {
+        "c": 0.9,
+        "f": 0.9
+      },
+      "type": "Implication"
+    },
+    {
+      "action": "FoundCity",
+      "category": "rule",
+      "fires_on_host_engine": false,
+      "form": "other",
+      "id": "r007",
+      "is_game_law": false,
+      "kind": "rule",
+      "origin": "rules.metta",
+      "provenance": "rule",
+      "statement": "(Implication (State $u ReadyToExpand) (Recommend $u FoundCity))",
+      "stv": {
+        "c": 0.9,
+        "f": 0.9
+      },
+      "type": "Implication"
+    },
+    {
+      "category": "recommendation",
+      "id": "d001",
+      "kind": "inferred",
+      "origin": "host-fallback",
+      "premises": [
+        "f006",
+        "r003"
+      ],
+      "provenance": "inferred-pln",
+      "statement": "(Recommend Unit_102 Settle)",
+      "stv": null,
+      "trace_id": null,
+      "type": "Recommend"
+    },
+    {
+      "category": "recommendation",
+      "id": "d002",
+      "kind": "inferred",
+      "origin": "host-fallback",
+      "premises": [
+        "f008",
+        "r003"
+      ],
+      "provenance": "inferred-pln",
+      "statement": "(Recommend Unit_110 Settle)",
+      "stv": null,
+      "trace_id": null,
+      "type": "Recommend"
+    },
+    {
+      "category": "recommendation",
+      "id": "d003",
+      "kind": "inferred",
+      "origin": "host-fallback",
+      "premises": [
+        "f010",
+        "r003"
+      ],
+      "provenance": "inferred-pln",
+      "statement": "(Recommend Unit_111 Settle)",
+      "stv": null,
+      "trace_id": null,
+      "type": "Recommend"
+    }
+  ],
+  "counts": {
+    "inferred-pln": 3,
+    "observed": 18,
+    "rule": 7
+  },
+  "engine": {
+    "recommendation_source": "host-fallback"
+  },
+  "generated_from": {
+    "player_perspective": 0,
+    "state_file": "freeciv/samples/real_state_turn1.json",
+    "state_hash": "f5c3a519212bd821aef4cbf7af5d1eaa7f1a1fbfeadb5944b44254fd80f3a69d",
+    "turn": 1
+  },
+  "groups": {
+    "inferred-pln": [
+      "d001",
+      "d002",
+      "d003"
+    ],
+    "observed": [
+      "f001",
+      "f002",
+      "f003",
+      "f004",
+      "f005",
+      "f006",
+      "f007",
+      "f008",
+      "f009",
+      "f010",
+      "f011",
+      "f012",
+      "f013",
+      "f014",
+      "f015",
+      "f016",
+      "f017",
+      "f018"
+    ],
+    "rule": [
+      "r001",
+      "r002",
+      "r003",
+      "r004",
+      "r005",
+      "r006",
+      "r007"
+    ]
+  },
+  "lint": {
+    "findings": [
+      {
+        "atom_ids": [],
+        "check": "game-law-confidence",
+        "message": "no game-world-law atoms \u2014 all 7 rules are strategic heuristics (legality is enforced procedurally by validate_action)",
+        "severity": "info"
+      },
+      {
+        "atom_ids": [
+          "r004",
+          "r005",
+          "r006",
+          "r007"
+        ],
+        "check": "inert-rule",
+        "message": "rules that do not fire under the current host engine",
+        "severity": "info"
+      }
+    ],
+    "ok": true
+  },
+  "schema_version": 1
+}

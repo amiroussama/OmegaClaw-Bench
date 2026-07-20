@@ -39,10 +39,14 @@ _BENCH = os.path.dirname(_HERE)
 if _BENCH not in sys.path:
     sys.path.insert(0, _BENCH)
 
-from freeciv import adapter, atoms, actions, client, turncycle, metrics, llm_agent, reason  # noqa: E402
+from freeciv import (adapter, atoms, actions, client, turncycle, metrics, llm_agent, reason,  # noqa: E402
+                     atomspace_export)
 
 WS = os.environ.get("FREECIV_PROXY_WS", "ws://localhost:8002/llmsocket/8002")
 TOKEN = os.environ.get("FREECIV_API_TOKEN", "test-token-fc3d-001")
+# Per-run AtomSpace snapshot artifact (Issue #2); default on, disable with FREECIV_ATOMSPACE_SNAPSHOT=0.
+_SNAPSHOT = (os.environ.get("FREECIV_ATOMSPACE_SNAPSHOT", "1").strip().lower()
+             not in {"0", "false", "no", "off"})
 
 
 # A derived recommendation atom, e.g. "(Recommend City_1 Defend)".
@@ -148,6 +152,11 @@ async def _play_side(ws, is_pln, out_dir=None, turn=None):
                     trace.save(os.path.join(out_dir, "traces"))
                 except Exception:  # noqa: BLE001 - tracing is best-effort; never break the arm
                     pass
+        if out_dir and _SNAPSHOT:  # per-run AtomSpace snapshot artifact (Issue #2)
+            try:
+                atomspace_export.write_run_snapshot(out_dir, st, recs, turn)
+            except Exception:  # noqa: BLE001 - snapshot is best-effort
+                pass
         block = reason.format_for_llm(recs)
         ctx = plain + ("\n\n" + block if block else "")
     acts, meta = llm_agent.decide(ctx, mine)
