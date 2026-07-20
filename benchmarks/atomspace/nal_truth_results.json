@@ -1,0 +1,65 @@
+{
+  "corpus": {
+    "truth_cases": 236,
+    "rule_cases": 4,
+    "epsilon": 1e-06,
+    "by_family": {
+      "nal": 176,
+      "pln": 60
+    },
+    "by_expected_kind": {
+      "stv": 222,
+      "scalar": 12,
+      "empty": 2
+    },
+    "rule_case_names": [
+      "pln-deduction-implication-chain",
+      "pln-modus-ponens",
+      "pln-revision-same-statement",
+      "nal-arrow-deduction"
+    ]
+  },
+  "backends": {
+    "hyperon": {
+      "status": "RUN",
+      "truth": {
+        "run": 236,
+        "pass": 236,
+        "fail": 0,
+        "max_abs_delta_f": 0.0,
+        "max_abs_delta_c": 5.551115123125783e-17,
+        "failures": []
+      },
+      "rules": {
+        "run": 4,
+        "pass": 4,
+        "fail": 0,
+        "skipped": 0,
+        "max_abs_delta_f": 0.0,
+        "max_abs_delta_c": 3.07692760159739e-11,
+        "failures": []
+      },
+      "elapsed_s": 1.17
+    },
+    "petta": {
+      "status": "SKIPPED",
+      "reason": "backend not available on this host"
+    },
+    "pure": {
+      "status": "RUN (rule cases only \u2014 truth arithmetic is the golden reference)",
+      "rules": {
+        "run": 3,
+        "pass": 3,
+        "fail": 0,
+        "skipped": 1,
+        "max_abs_delta_f": 0.0,
+        "max_abs_delta_c": 3.07692760159739e-11,
+        "failures": []
+      }
+    }
+  },
+  "gate": {
+    "passed": true,
+    "failures": []
+  }
+}

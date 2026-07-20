@@ -1,0 +1,156 @@
+{
+  "sizes": [
+    1000,
+    10000
+  ],
+  "corpus": {
+    "1000": {
+      "n": 1000,
+      "seed": 1001,
+      "by_head": {
+        "Inheritance": 200,
+        "Implication": 200,
+        "Similarity": 200,
+        "Evaluation": 200,
+        "Not": 200
+      },
+      "by_source_type": {
+        "game_state": 200,
+        "knowledge_prior": 204,
+        "user": 187,
+        "tool_result": 207,
+        "llm": 202
+      },
+      "supersede_marked": 67,
+      "explicit_stv": 519
+    },
+    "10000": {
+      "n": 10000,
+      "seed": 1001,
+      "by_head": {
+        "Inheritance": 2000,
+        "Implication": 2000,
+        "Similarity": 2000,
+        "Evaluation": 2000,
+        "Not": 2000
+      },
+      "by_source_type": {
+        "game_state": 2029,
+        "knowledge_prior": 2011,
+        "user": 1980,
+        "tool_result": 2030,
+        "llm": 1950
+      },
+      "supersede_marked": 490,
+      "explicit_stv": 4950
+    }
+  },
+  "per_size": {
+    "1000": {
+      "asserted_added": 1000,
+      "write_ms": 26.0,
+      "hydration": {
+        "n": 1000,
+        "hydrated": 1000,
+        "hydrate_ms": 4.4,
+        "gate_ms": 500.0
+      },
+      "retransmission": {
+        "n": 1000,
+        "calls": 50,
+        "baseline_atoms_transmitted": 50000,
+        "candidate_atoms_transmitted": 3355,
+        "one_time_writes": 1000,
+        "neighborhood_reads": 2355,
+        "avg_neighborhood": 47.1,
+        "read_ms": 4.3,
+        "reduction": 0.9329
+      }
+    },
+    "10000": {
+      "asserted_added": 10000,
+      "write_ms": 298.6,
+      "hydration": {
+        "n": 10000,
+        "hydrated": 10000,
+        "hydrate_ms": 45.3,
+        "gate_ms": 3000.0
+      },
+      "retransmission": {
+        "n": 10000,
+        "calls": 50,
+        "baseline_atoms_transmitted": 500000,
+        "candidate_atoms_transmitted": 22800,
+        "one_time_writes": 10000,
+        "neighborhood_reads": 12800,
+        "avg_neighborhood": 256.0,
+        "read_ms": 50.7,
+        "reduction": 0.9544
+      }
+    }
+  },
+  "fidelity": {
+    "n": 1000,
+    "asserted": 1000,
+    "import_report": {
+      "added": 1000,
+      "dup": 0,
+      "revised": 0,
+      "total": 1000
+    },
+    "import_rejected": 0,
+    "identical": 1000,
+    "fidelity_pct": 100.0,
+    "mismatches": []
+  },
+  "scope_isolation": {
+    "scopes": [
+      "aaaaaaaaaaaa",
+      "bbbbbbbbbbbb",
+      "global"
+    ],
+    "atoms_per_scope": 200,
+    "cross_scope_lookups": 1320,
+    "leaks": 0
+  },
+  "supersession": {
+    "marked": 67,
+    "retracted": 67,
+    "excluded_by_default": 67,
+    "visible_with_include_superseded": 67,
+    "excluded_pct": 100.0,
+    "counts_after": {
+      "total": 1000,
+      "superseded": 67,
+      "by_head": {
+        "Evaluation": 183,
+        "Implication": 186,
+        "Inheritance": 190,
+        "Not": 183,
+        "Similarity": 191
+      }
+    }
+  },
+  "crash_recovery": {
+    "child_exit_code": 1,
+    "asserts_before_crash": 250,
+    "integrity_check": "ok",
+    "atom_rows": 250,
+    "terms_consistent": true,
+    "provenance_consistent": true,
+    "reopened_counts": {
+      "total": 250,
+      "superseded": 0,
+      "by_head": {
+        "Inheritance": 250
+      }
+    },
+    "post_crash_assert": "added",
+    "clean": true,
+    "child_stderr": ""
+  },
+  "gate": {
+    "passed": true,
+    "failures": []
+  }
+}
