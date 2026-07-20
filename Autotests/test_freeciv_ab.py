@@ -101,7 +101,12 @@ def _run_arm(arm, out_dir, monkey_reason=True):
     ab_sim.llm_agent.decide = lambda ctx, units, **kw: (
         [{"type": "unit_fortify", "unit_id": 7}], {"prompt_chars": len(ctx), "llm_ms": 5, "error": None})
     if monkey_reason:
-        ab_sim.reason.derive = lambda facts, **kw: ["(Recommend City_1 Defend)"]
+        def _fake_derive(facts, **kw):
+            recs = ["(Recommend City_1 Defend)"]
+            if kw.get("return_meta"):
+                return recs, {"hops": 2, "n_conclusions": len(recs), "n_atoms": 1}
+            return recs
+        ab_sim.reason.derive = _fake_derive
     # fact-proposal is a live-only LLM call; force it host-safe (no key) for the fact arms.
     ab_sim.fact_proposer._KEY = ""
     # MockProxyWS.state() has no units by default -> _pregame would loop; give it our state

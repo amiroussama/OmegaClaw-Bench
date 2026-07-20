@@ -109,7 +109,7 @@ def _context(arm, norm):
     between them is the PLN engine.
     """
     plain = llm_agent.render_plain(norm)
-    extra = {"reason_ms": None, "recs": [], "n_conclusions": 0,
+    extra = {"reason_ms": None, "recs": [], "n_conclusions": 0, "hops": 0,
              "n_llm_facts": 0, "fact_llm_ms": None}
     if not _is_fact_arm(arm):
         return plain, extra
@@ -127,10 +127,11 @@ def _context(arm, norm):
 
     # facts+chaining: PLN multi-hop over the merged facts -> recommendations
     t0 = time.time()
-    recs = reason.derive(facts)
+    recs, rmeta = reason.derive(facts, return_meta=True)
     extra["reason_ms"] = int((time.time() - t0) * 1000)
     extra["recs"] = recs
-    extra["n_conclusions"] = len(recs)
+    extra["n_conclusions"] = rmeta.get("n_conclusions", len(recs))
+    extra["hops"] = rmeta.get("hops", 0)
     block = reason.format_for_llm(recs)
     ctx = ctx + ("\n\n" + block if block else "")
     return ctx, extra
@@ -190,6 +191,7 @@ async def run(arm, seed, hours, max_turns, out_dir):
                        "illegal_rate": (blocked / proposed) if proposed else 0.0,
                        "llm_ms": meta.get("llm_ms"), "reason_ms": reason_ms, "n_conclusions": n_conc,
                        "n_llm_facts": extra["n_llm_facts"], "fact_llm_ms": extra["fact_llm_ms"],
+                       "hops": extra["hops"],
                        "prompt_chars": meta.get("prompt_chars"), "llm_error": meta.get("error"),
                        "moves": moves, "recommendations": recommendations}
                 _log(out_dir, arm, rec)

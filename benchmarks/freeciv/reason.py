@@ -37,8 +37,15 @@ import subprocess
 import sys
 import tempfile
 
+from . import atoms
+
 _HERE = os.path.dirname(os.path.abspath(__file__))            # benchmarks/freeciv
 _REPO = os.path.dirname(os.path.dirname(_HERE))               # repo root
+
+# Chaining bounds (env-overridable). The fixpoint runs at most HOP_CAP passes, and conclusions
+# whose confidence has decayed below CONF_MIN are pruned (chained Modus Ponens decays c fast).
+_HOP_CAP_DEFAULT = 3
+_CONF_MIN_DEFAULT = 0.3
 
 # Import preamble: replicate run.metta's setup so the `OmegaClaw-Core` library root is registered
 # (lib_import provides `library`/`git-import!`; git-import! resolves to the LOCAL repos/ clone
@@ -58,6 +65,20 @@ _REC_RE = re.compile(r"\(Recommend\s+([^\s()]+)\s+([^\s()]+)\)")
 
 def _debug():
     return (os.environ.get("OMEGACLAW_REASON_DEBUG") or "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _env_int(name, default):
+    try:
+        return max(1, int(os.environ.get(name, "")))
+    except (TypeError, ValueError):
+        return default
+
+
+def _env_float(name, default):
+    try:
+        return float(os.environ.get(name, ""))
+    except (TypeError, ValueError):
+        return default
 
 
 def _imports():
@@ -92,17 +113,55 @@ def _eval(program, timeout):
             pass
 
 
-def derive(fact_sentences, timeout=30):
-    """Return unique derived recommendation atoms for the given fact sentences (``[]`` on any failure)."""
-    facts = [f.strip() for f in (fact_sentences or []) if f and f.strip()]
-    if not facts:
-        return []
-    try:
-        out = _eval(build_program(facts), timeout)
-    except Exception:  # noqa: BLE001 - reasoning is best-effort; never break the arm
-        return []
+def _balanced_groups(text):
+    """Yield every top-level parenthesized substring of ``text`` (ignores non-paren noise/brackets)."""
+    depth, start = 0, None
+    for i, ch in enumerate(text):
+        if ch == "(":
+            if depth == 0:
+                start = i
+            depth += 1
+        elif ch == ")" and depth > 0:
+            depth -= 1
+            if depth == 0 and start is not None:
+                yield text[start:i + 1]
+                start = None
+
+
+def _parse_sentences(out):
+    """Parse interpreter output into a list of ``(statement_str, f, c)`` derived sentences.
+
+    A derived sentence is ``(<atom> (stv f c))`` with f,c parseable floats in [0,1]. Anything that
+    does not structurally match (unreduced expressions, malformed atoms) is skipped.
+    """
+    results = []
+    for grp in _balanced_groups(out):
+        try:
+            tree = atoms._parse_sexpr(grp)
+        except ValueError:
+            continue
+        if not (isinstance(tree, list) and len(tree) == 2 and isinstance(tree[1], list)):
+            continue
+        stv = tree[1]
+        if stv[:1] != ["stv"] or len(stv) != 3:
+            continue
+        try:
+            f, c = float(stv[1]), float(stv[2])
+        except (TypeError, ValueError):
+            continue
+        if not (0.0 <= f <= 1.0 and 0.0 <= c <= 1.0):
+            continue
+        results.append((atoms._unparse(tree[0]), f, c))
+    return results
+
+
+def _recs_from_statements(statements):
+    """Concrete (non-template) ``(Recommend entity action)`` atoms from a statement iterable."""
     seen, recs = set(), []
-    for m in _REC_RE.finditer(out):
+    for stmt in statements:
+        m = _REC_RE.match(stmt) or _REC_RE.search(stmt)
+        if not m:
+            continue
         entity, action = m.group(1), m.group(2)
         # Skip ungrounded rule templates that leak from non-matching fact/rule pairings
         # (e.g. "(Recommend $c Defend)"): a real recommendation has a concrete entity.
@@ -113,6 +172,58 @@ def derive(fact_sentences, timeout=30):
             seen.add(key)
             recs.append("(Recommend {} {})".format(entity, action))
     return recs
+
+
+def derive(fact_sentences, timeout=30, max_hops=None, conf_min=None, return_meta=False):
+    """Multi-hop PLN derivation over the observed facts (``[]`` / ``([], meta)`` on any failure).
+
+    Bounded Python-driven fixpoint: each pass runs the interpreter over the current premise set,
+    parses ALL derived ``(atom (stv f c))`` sentences, prunes those below ``conf_min``, adds the
+    new ones back to the premises, and re-runs until no new atom is derived or ``max_hops`` passes
+    have run. This composes intermediate-predicate rules into specific recommendations while a
+    confidence floor bounds over-decayed chains.
+
+    Returns the unique concrete ``(Recommend entity action)`` atoms. With ``return_meta=True`` also
+    returns ``{"hops", "n_conclusions", "n_atoms"}`` for the per-turn metrics log.
+    """
+    max_hops = max_hops if max_hops is not None else _env_int("OMEGACLAW_REASON_HOPS", _HOP_CAP_DEFAULT)
+    conf_min = conf_min if conf_min is not None else _env_float("OMEGACLAW_REASON_CONF_MIN", _CONF_MIN_DEFAULT)
+    facts = [f.strip() for f in (fact_sentences or []) if f and f.strip()]
+    meta = {"hops": 0, "n_conclusions": 0, "n_atoms": 0}
+    if not facts:
+        return ([], meta) if return_meta else []
+
+    known = {}  # statement -> (f, c), best truth seen; seed with the input facts so chains compose
+    for stmt, f, c in _parse_sentences("\n".join(facts)):
+        known[stmt] = (f, c)
+    seed = set(known)
+    premises = list(facts)
+    hops = 0
+    for _ in range(max_hops):
+        try:
+            out = _eval(build_program(premises), timeout)
+        except Exception:  # noqa: BLE001 - reasoning is best-effort; never break the arm
+            break
+        hops += 1
+        added = False
+        for stmt, f, c in _parse_sentences(out):
+            if c < conf_min:
+                continue
+            prev = known.get(stmt)
+            if prev is None:
+                known[stmt] = (f, c)
+                added = True
+            elif c > prev[1]:
+                known[stmt] = (f, c)
+        if not added:
+            break
+        premises = ["({} (stv {} {}))".format(stmt, atoms._fmt(f), atoms._fmt(c))
+                    for stmt, (f, c) in known.items()]
+
+    recs = _recs_from_statements(sorted(known))
+    meta = {"hops": hops, "n_conclusions": len(recs),
+            "n_atoms": len([s for s in known if s not in seed])}
+    return (recs, meta) if return_meta else recs
 
 
 def format_facts_for_llm(fact_sentences, limit=40):
