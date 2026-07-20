@@ -184,6 +184,52 @@ def _recs_from_statements(statements):
     return recs
 
 
+def _fixpoint(facts, timeout, max_hops, conf_min, trace=None):
+    """Run the bounded multi-hop fixpoint. Returns (known, seed, hops, status, error).
+
+    ``known`` maps statement -> (f, c) best-seen truth (seeded with the input facts). When a
+    ``trace`` (PlnTrace) is given, each pass records its derived atoms with truth values.
+    ``status`` is "ok", or "interpreter_unavailable"/"error" if the interpreter failed before any
+    hop completed (host case: no PeTTa).
+    """
+    known = {}  # statement -> (f, c), best truth seen; seed with the input facts so chains compose
+    for stmt, f, c in _parse_sentences("\n".join(facts)):
+        known[stmt] = (f, c)
+    seed = set(known)
+    premises = list(facts)
+    hops = 0
+    status, error = "ok", None
+    for _ in range(max_hops):
+        try:
+            out = _eval(build_program(premises), timeout)
+        except Exception as e:  # noqa: BLE001 - reasoning is best-effort; never break the arm
+            if hops == 0:
+                status, error = "interpreter_unavailable", str(e)
+            break
+        hops += 1
+        added = False
+        hop_rows = []
+        for stmt, f, c in _parse_sentences(out):
+            if c < conf_min:
+                continue
+            prev = known.get(stmt)
+            is_new = prev is None
+            if prev is None:
+                known[stmt] = (f, c)
+                added = True
+            elif c > prev[1]:
+                known[stmt] = (f, c)
+            if trace is not None:
+                hop_rows.append({"atom": stmt, "strength": f, "confidence": c, "new": is_new})
+        if trace is not None:
+            trace.add_hop(len(premises), hop_rows)
+        if not added:
+            break
+        premises = ["({} (stv {} {}))".format(stmt, atoms._fmt(f), atoms._fmt(c))
+                    for stmt, (f, c) in known.items()]
+    return known, seed, hops, status, error
+
+
 def derive(fact_sentences, timeout=30, max_hops=None, conf_min=None, return_meta=False):
     """Multi-hop PLN derivation over the observed facts (``[]`` / ``([], meta)`` on any failure).
 
@@ -199,41 +245,76 @@ def derive(fact_sentences, timeout=30, max_hops=None, conf_min=None, return_meta
     max_hops = max_hops if max_hops is not None else _env_int("OMEGACLAW_REASON_HOPS", _HOP_CAP_DEFAULT)
     conf_min = conf_min if conf_min is not None else _env_float("OMEGACLAW_REASON_CONF_MIN", _CONF_MIN_DEFAULT)
     facts = [f.strip() for f in (fact_sentences or []) if f and f.strip()]
-    meta = {"hops": 0, "n_conclusions": 0, "n_atoms": 0}
     if not facts:
+        meta = {"hops": 0, "n_conclusions": 0, "n_atoms": 0}
         return ([], meta) if return_meta else []
 
-    known = {}  # statement -> (f, c), best truth seen; seed with the input facts so chains compose
-    for stmt, f, c in _parse_sentences("\n".join(facts)):
-        known[stmt] = (f, c)
-    seed = set(known)
-    premises = list(facts)
-    hops = 0
-    for _ in range(max_hops):
-        try:
-            out = _eval(build_program(premises), timeout)
-        except Exception:  # noqa: BLE001 - reasoning is best-effort; never break the arm
-            break
-        hops += 1
-        added = False
-        for stmt, f, c in _parse_sentences(out):
-            if c < conf_min:
-                continue
-            prev = known.get(stmt)
-            if prev is None:
-                known[stmt] = (f, c)
-                added = True
-            elif c > prev[1]:
-                known[stmt] = (f, c)
-        if not added:
-            break
-        premises = ["({} (stv {} {}))".format(stmt, atoms._fmt(f), atoms._fmt(c))
-                    for stmt, (f, c) in known.items()]
-
+    known, seed, hops, _status, _error = _fixpoint(facts, timeout, max_hops, conf_min)
     recs = _recs_from_statements(sorted(known))
     meta = {"hops": hops, "n_conclusions": len(recs),
             "n_atoms": len([s for s in known if s not in seed])}
     return (recs, meta) if return_meta else recs
+
+
+_RULE_ACTIONS = None
+
+
+def _rule_id_for_action(action):
+    """Best-effort rule id for a derived Recommend action (None if no rule declares it)."""
+    global _RULE_ACTIONS
+    if _RULE_ACTIONS is None:
+        try:
+            _RULE_ACTIONS = {r["action"] for r in rulesparse.load_rules()}
+        except Exception:  # noqa: BLE001
+            _RULE_ACTIONS = set()
+    return "recommend-" + action.lower() if action in _RULE_ACTIONS else None
+
+
+def derive_traced(fact_sentences, timeout=30, max_hops=None, conf_min=None, context=None):
+    """Like ``derive`` but also returns a structured ``PlnTrace`` (Issue #1/#3).
+
+    Records the derivation proactively — the trace always captures the query, input facts, each
+    inference hop (atoms + truth values), and the final recommendations, even when the interpreter
+    is unavailable (host case -> status ``interpreter_unavailable`` with the attempt recorded).
+    Never raises. Returns (recommendations, PlnTrace-or-None).
+    """
+    max_hops = max_hops if max_hops is not None else _env_int("OMEGACLAW_REASON_HOPS", _HOP_CAP_DEFAULT)
+    conf_min = conf_min if conf_min is not None else _env_float("OMEGACLAW_REASON_CONF_MIN", _CONF_MIN_DEFAULT)
+    facts = [f.strip() for f in (fact_sentences or []) if f and f.strip()]
+
+    if PlnTrace is None:  # trace module unavailable -> fall back to plain derive
+        return derive(facts, timeout, max_hops, conf_min), None
+
+    engine = {"cmd": os.environ.get("OMEGACLAW_METTA_CMD", "sh /PeTTa/run.sh")}
+    trace = PlnTrace(query="recommend-for", facts=facts, engine=engine, context=context or {})
+    if not facts:
+        trace.finish([], status="no_conclusions")
+        return [], trace
+
+    t0 = time.monotonic()
+    known, _seed, _hops, status, error = _fixpoint(facts, timeout, max_hops, conf_min, trace=trace)
+    latency_ms = round((time.monotonic() - t0) * 1000.0, 1)
+    trace.engine["available"] = status != "interpreter_unavailable"
+    trace.engine["latency_ms"] = latency_ms
+
+    recs = _recs_from_statements(sorted(known))
+    conclusions = []
+    for stmt in sorted(known):
+        m = _REC_RE.match(stmt) or _REC_RE.search(stmt)
+        if not m:
+            continue
+        entity, action = m.group(1), m.group(2)
+        if entity.startswith("$") or action.startswith("$"):
+            continue
+        f, c = known[stmt]
+        conclusions.append({"atom": stmt, "strength": f, "confidence": c,
+                            "rule_id": _rule_id_for_action(action)})
+    trace.set_conclusions(conclusions)
+
+    final_status = status if status in ("interpreter_unavailable", "error") else \
+        ("ok" if recs else "no_conclusions")
+    trace.finish(recs, status=final_status, error=error, latency_ms=latency_ms)
+    return recs, trace
 
 
 def format_facts_for_llm(fact_sentences, limit=40):
@@ -290,17 +371,34 @@ def format_for_llm(recommendations, grounded=None):
 
 if __name__ == "__main__":
     # Spike helper: derive from a captured state file, or from stdin fact lines.
+    # Optional: `--trace-out DIR` saves the PlnTrace and prints its human-readable rendering
+    # (the in-container demo path for Issue #1).
+    import argparse
     import json
     sys.path.insert(0, os.path.dirname(_HERE))  # benchmarks (for the `freeciv` package)
     from freeciv import adapter, atoms  # noqa: E402
-    if len(sys.argv) > 1:
-        state = json.load(open(sys.argv[1], encoding="utf-8"))
+
+    ap = argparse.ArgumentParser()
+    ap.add_argument("state", nargs="?", help="captured llm_optimized state JSON (else read stdin)")
+    ap.add_argument("--trace-out", help="directory to save the PlnTrace JSON")
+    args = ap.parse_args()
+
+    if args.state:
+        state = json.load(open(args.state, encoding="utf-8"))
         facts = atoms.sentences_from_facts(adapter.facts_from_state(adapter.normalize_state(state)))
     else:
         facts = [ln.strip() for ln in sys.stdin if ln.strip()]
     print("input facts: {}".format(len(facts)))
-    recs = derive(facts)
-    print("derived {} recommendation(s):".format(len(recs)))
-    for r in recs:
-        print("  ", r)
-    print("\n" + (format_for_llm(recs) or "(none)"))
+
+    if args.trace_out:
+        recs, trace = derive_traced(facts, context={"source": args.state or "stdin"})
+        print("\n" + trace.render_text())
+        if trace is not None:
+            path = trace.save(args.trace_out)
+            print("\nsaved trace -> {}".format(path))
+    else:
+        recs = derive(facts)
+        print("derived {} recommendation(s):".format(len(recs)))
+        for r in recs:
+            print("  ", r)
+        print("\n" + (format_for_llm(recs) or "(none)"))
