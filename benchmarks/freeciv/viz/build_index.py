@@ -156,21 +156,33 @@ def _ab_run(run_dir, run_id):
     payload = json.load(open(cmp_path, encoding="utf-8"))
     stats = payload.get("stats", {})
     traj = payload.get("trajectory", {})
+    # 3-arm comparison.json carries "arms"/"contrast"; legacy 2-arm dirs default to pln/plain.
+    arms = payload.get("arms") or ["pln", "plain"]
+    contrast = payload.get("contrast") or ["pln", "plain"]
+    a_name, b_name = contrast[0], contrast[-1]
+
     def _pts(arm):
         out = []
         for p in traj.get(arm, []):
             out.append({"turn": p.get("turn"),
                         **{k: p.get(k) for k in _TRAJ_METRICS}})
         return out
+
     overall = payload.get("overall")
     wins = payload.get("verdict_wins") or {}
-    verdict = "overall winner: %s (%s)" % (overall, wins) if overall else "A/B (no verdict)"
+    verdict = ("overall winner: %s (%s vs %s) %s" % (overall, a_name, b_name, wins)
+               if overall else "A/B (no verdict)")
+    # Map the primary contrast (chaining vs facts-only) onto the page's pln/plain slots, and expose
+    # the full arm set for a 3-arm view.
     game = {"subdir": None, "pln_side": None,
-            "trajectory": {"pln": _pts("pln"), "plain": _pts("plain")}, "moves": [],
-            "stats": {"pln": stats.get("pln"), "plain": stats.get("plain")},
+            "trajectory": {"pln": _pts(a_name), "plain": _pts(b_name)}, "moves": [],
+            "stats": {"pln": stats.get(a_name), "plain": stats.get(b_name)},
+            "arms": arms, "contrast": contrast,
+            "trajectory_all": {a: _pts(a) for a in arms},
+            "stats_all": {a: stats.get(a) for a in arms},
             "winner": overall, "moves_logged": False}
     return {"id": run_id, "type": "ab", "source": "comparison.json", "games": [game],
-            "verdict": verdict, "has_moves": False}
+            "arms": arms, "contrast": contrast, "verdict": verdict, "has_moves": False}
 
 
 # --------------------------------------------------------------------------- fixtures (static KPI)

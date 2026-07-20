@@ -4,8 +4,9 @@
 # Stands up N_STACKS isolated freeciv-llm stacks (ports 8002, 8012, 8022, ...), splits N_SEEDS seeds
 # round-robin across them, and launches one durable docker:cli WORKER per stack. Each worker runs its
 # seeds SEQUENTIALLY (proxy = one active game at a time); across stacks the seeds run in PARALLEL.
-# Per seed a worker produces a duel mirror pair (g1/g2) and an A/B pair (pln/plain) with per-seed
-# reports. Aggregate anytime with aggregate.py (works on partial results).
+# Per seed a worker produces a duel mirror pair (g1/g2) and the 3-arm A/B set (facts+chaining /
+# facts-only / plain) with per-seed reports. Aggregate anytime with aggregate.py (works on partial
+# results); the primary contrast is facts+chaining vs facts-only (the marginal value of chaining).
 #
 # Workers are containers, so the whole batch survives terminal/session teardowns. Re-running batch.sh
 # starts a NEW batch dir; to resume a stopped batch just relaunch its workers (see README).

@@ -1,8 +1,9 @@
 #!/bin/sh
 # Per-stack batch worker (runs INSIDE a docker:cli container so it survives host/session teardowns).
 # Processes a queue of seeds SEQUENTIALLY on ONE isolated freeciv-llm stack instance. For each seed
-# it runs the duel mirror pair (g1 PLN=side0, g2 PLN=side1) and the A/B pair (pln arm, plain arm),
-# recreating the stack before EVERY game so each starts from a fresh turn-1 world (a plain restart
+# it runs the duel mirror pair (g1 PLN=side0, g2 PLN=side1) and the 3-arm A/B set (facts+chaining,
+# facts-only, plain), recreating the stack before EVERY game so each starts from a fresh turn-1
+# world (a plain restart
 # reloads the previous ephemeral save; only rm+compose-up clears it). One game at a time — the proxy
 # carries a single active game, so concurrency reconnect-storms.
 #
@@ -66,9 +67,15 @@ for SEED in $SEEDS; do
   ;; esac
 
   case " $MODES " in *" ab "*)
-    recreate; log "seed $SEED A/B pln arm"
-    sim "fc-b$INST-s$SEED-abp" "exec python3 -u /PeTTa/repos/OmegaClaw-Core/benchmarks/freeciv/ab_sim.py --arm pln --game-id b${INST}ap_$SEED --seed $SEED --hours $HRS --max-turns $AB_MT --out /PeTTa/repos/OmegaClaw-Core/$SD/ab"
-    wait_gone "fc-b$INST-s$SEED-abp"
+    # 3-arm experiment: plain (control) / facts-only (facts, no PLN) / facts+chaining (facts + PLN).
+    # The primary contrast is facts+chaining vs facts-only (the marginal value of chaining).
+    recreate; log "seed $SEED A/B facts+chaining arm"
+    sim "fc-b$INST-s$SEED-abc" "exec python3 -u /PeTTa/repos/OmegaClaw-Core/benchmarks/freeciv/ab_sim.py --arm 'facts+chaining' --game-id b${INST}ac_$SEED --seed $SEED --hours $HRS --max-turns $AB_MT --out /PeTTa/repos/OmegaClaw-Core/$SD/ab"
+    wait_gone "fc-b$INST-s$SEED-abc"
+
+    recreate; log "seed $SEED A/B facts-only arm"
+    sim "fc-b$INST-s$SEED-abf" "exec python3 -u /PeTTa/repos/OmegaClaw-Core/benchmarks/freeciv/ab_sim.py --arm 'facts-only' --game-id b${INST}af_$SEED --seed $SEED --hours $HRS --max-turns $AB_MT --out /PeTTa/repos/OmegaClaw-Core/$SD/ab"
+    wait_gone "fc-b$INST-s$SEED-abf"
 
     recreate; log "seed $SEED A/B plain arm"
     sim "fc-b$INST-s$SEED-abq" "exec python3 -u /PeTTa/repos/OmegaClaw-Core/benchmarks/freeciv/ab_sim.py --arm plain --game-id b${INST}aq_$SEED --seed $SEED --hours $HRS --max-turns $AB_MT --out /PeTTa/repos/OmegaClaw-Core/$SD/ab"
