@@ -138,11 +138,44 @@ def _balanced_groups(text):
                 start = None
 
 
+def _sentence_of(node):
+    """If ``node`` is a ``[<atom>, [stv, f, c]]`` sentence with f,c in [0,1], return
+    ``(statement_str, f, c)``; else None."""
+    if not (isinstance(node, list) and len(node) == 2 and isinstance(node[1], list)):
+        return None
+    stv = node[1]
+    if stv[:1] != ["stv"] or len(stv) != 3:
+        return None
+    try:
+        f, c = float(stv[1]), float(stv[2])
+    except (TypeError, ValueError):
+        return None
+    if not (0.0 <= f <= 1.0 and 0.0 <= c <= 1.0):
+        return None
+    return (atoms._unparse(node[0]), f, c)
+
+
+def _collect_sentences(node, out):
+    """Recursively collect every ``[atom, [stv f c]]`` sentence anywhere in ``node``.
+
+    The PeTTa interpreter wraps ``findall`` results in extra list layers (a one-result recommendation
+    prints as ``(((Recommend City_1 Defend) (stv 0.9 0.71)))``), so we walk the whole parse tree
+    rather than only matching the top level.
+    """
+    s = _sentence_of(node)
+    if s is not None:
+        out.append(s)
+        return  # don't also recurse into a matched sentence's own subterms
+    if isinstance(node, list):
+        for child in node:
+            _collect_sentences(child, out)
+
+
 def _parse_sentences(out):
     """Parse interpreter output into a list of ``(statement_str, f, c)`` derived sentences.
 
-    A derived sentence is ``(<atom> (stv f c))`` with f,c parseable floats in [0,1]. Anything that
-    does not structurally match (unreduced expressions, malformed atoms) is skipped.
+    A derived sentence is ``(<atom> (stv f c))`` with f,c parseable floats in [0,1] — found at any
+    nesting depth (the interpreter wraps results in extra parens). Non-matching text is skipped.
     """
     results = []
     for grp in _balanced_groups(out):
@@ -150,19 +183,17 @@ def _parse_sentences(out):
             tree = atoms._parse_sexpr(grp)
         except ValueError:
             continue
-        if not (isinstance(tree, list) and len(tree) == 2 and isinstance(tree[1], list)):
-            continue
-        stv = tree[1]
-        if stv[:1] != ["stv"] or len(stv) != 3:
-            continue
-        try:
-            f, c = float(stv[1]), float(stv[2])
-        except (TypeError, ValueError):
-            continue
-        if not (0.0 <= f <= 1.0 and 0.0 <= c <= 1.0):
-            continue
-        results.append((atoms._unparse(tree[0]), f, c))
+        _collect_sentences(tree, results)
     return results
+
+
+def _head(statement):
+    """The head constructor of an atom statement (``''`` if unparseable)."""
+    try:
+        tree = atoms._parse_sexpr(statement)
+    except ValueError:
+        return ""
+    return tree[0] if isinstance(tree, list) and tree and isinstance(tree[0], str) else ""
 
 
 def _recs_from_statements(statements):
@@ -225,8 +256,14 @@ def _fixpoint(facts, timeout, max_hops, conf_min, trace=None):
             trace.add_hop(len(premises), hop_rows)
         if not added:
             break
-        premises = ["({} (stv {} {}))".format(stmt, atoms._fmt(f), atoms._fmt(c))
-                    for stmt, (f, c) in known.items()]
+        # Next pass = the input facts (so first-hop rules keep firing) + only the derived
+        # CUSTOM-head intermediates (State/Priority/Recommend/...). Re-feeding standard PLN links
+        # (Inheritance/Implication/...) would recycle lib_pln's inversion/revision reflections of
+        # the rules themselves and blow the premise set up combinatorially.
+        premises = list(facts) + [
+            "({} (stv {} {}))".format(stmt, atoms._fmt(f), atoms._fmt(c))
+            for stmt, (f, c) in known.items()
+            if stmt not in seed and _head(stmt) not in atoms._KNOWN_LINKS]
     return known, seed, hops, status, error
 
 
