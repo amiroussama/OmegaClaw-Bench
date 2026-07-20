@@ -10,6 +10,14 @@ Captured live from a running `taso-ventures/freeciv-llm` stack during Issue #6 v
 - `real_state_turn1.json` — a **started** game (turn 1) with the player's 7 starting units
   (`startunits "cccwwwx"` = 3 settlers, 3 workers, 1 caravan). Anchors the populated-state
   regression test.
+- `atomspace_snapshot_turn1.json` — the committed **AtomSpace snapshot** (Issue #2) generated
+  from `real_state_turn1.json` on the host (`recommendation_source: host-fallback`). Golden
+  artifact for `test_freeciv_atomspace.py`. Regenerate after a mapping/rules change:
+  ```
+  python3 benchmarks/freeciv/atomspace_export.py \
+    --state benchmarks/freeciv/samples/real_state_turn1.json \
+    --out benchmarks/freeciv/samples/atomspace_snapshot_turn1.json
+  ```
 
 **Game-start note:** freeciv-llm civservers default to `minplayers=2`, so a single agent + aifill
 stays in pregame forever. To start: while in pregame send `/set minplayers 1` then `/start`
