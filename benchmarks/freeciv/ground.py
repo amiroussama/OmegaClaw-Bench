@@ -20,10 +20,11 @@ from . import actions
 # (Recommend <entity> <action>) with concrete (non-$) entity/action tokens.
 _REC_RE = re.compile(r"\(Recommend\s+([A-Za-z0-9_]+)\s+([A-Za-z0-9_]+)\)")
 
-# Recommendation verbs grouped by what they ground to.
-_CITY_DEFEND = ("Defend", "BuildDefender", "Garrison")
+# Recommendation verbs grouped by what they ground to. (v2 atomspace verbs are folded in
+# alongside the v1 ones: FoundCityNow == FoundCity, GarrisonNow == Garrison — same grounding.)
+_CITY_DEFEND = ("Defend", "BuildDefender", "Garrison", "GarrisonNow")
 _CITY_FOOD = ("Food", "Irrigate", "Grow")
-_UNIT_SETTLE = ("Settle", "FoundCity", "Expand")
+_UNIT_SETTLE = ("Settle", "FoundCity", "Expand", "FoundCityNow")
 _UNIT_RETREAT = ("Retreat", "Flee")
 
 

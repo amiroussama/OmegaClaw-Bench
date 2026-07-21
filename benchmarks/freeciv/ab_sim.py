@@ -38,7 +38,7 @@ if _BENCH not in sys.path:
     sys.path.insert(0, _BENCH)
 
 from freeciv import (adapter, atoms, actions, client, turncycle, metrics, llm_agent, reason,  # noqa: E402
-                     duel_sim, fact_proposer, ground, atomspace_export)
+                     duel_sim, fact_proposer, ground, atomspace_export, reason_v2)
 
 # Per-run AtomSpace snapshot artifact (Issue #2); default on, disable with FREECIV_ATOMSPACE_SNAPSHOT=0.
 _SNAPSHOT = (os.environ.get("FREECIV_ATOMSPACE_SNAPSHOT", "1").strip().lower()
@@ -47,17 +47,23 @@ _SNAPSHOT = (os.environ.get("FREECIV_ATOMSPACE_SNAPSHOT", "1").strip().lower()
 WS = os.environ.get("FREECIV_PROXY_WS", "ws://localhost:8002/llmsocket/8002")
 TOKEN = os.environ.get("FREECIV_API_TOKEN", "test-token-fc3d-001")
 
-# Arm vocabulary (the 3-arm experiment). ``pln`` is kept as a backwards-compatible alias for
-# ``facts+chaining`` (older batch dirs / callers). ``plain`` is the untouched control.
-ARMS = ("plain", "facts-only", "facts+chaining")
+# Arm vocabulary. ``pln`` is a backwards-compatible alias for ``facts+chaining`` (older batch
+# dirs / callers). ``plain`` is the untouched control. ``facts+chaining-v2`` reasons with the
+# colleague's atomspace-v2 (rulebook + world overlay + player, via reason_v2) instead of v1's
+# rules.metta — same facts-block + grounded-recs plumbing, different knowledge base + engine.
+ARMS = ("plain", "facts-only", "facts+chaining", "facts+chaining-v2")
 
 
 def _is_fact_arm(arm):
-    return arm in ("facts-only", "facts+chaining", "pln")
+    return arm in ("facts-only", "facts+chaining", "facts+chaining-v2", "pln")
 
 
 def _uses_chaining(arm):
-    return arm in ("facts+chaining", "pln")
+    return arm in ("facts+chaining", "facts+chaining-v2", "pln")
+
+
+def _is_v2(arm):
+    return arm == "facts+chaining-v2"
 
 
 def _agent_id(arm):
@@ -108,17 +114,19 @@ async def _pregame(ws, seed):
     return st
 
 
-def _context(arm, norm):
+def _context(arm, norm, raw=None):
     """Arm-specific state rendering + (chaining) reasoning. Returns ``(context_text, extra)``.
 
     ``extra`` carries the per-turn reasoning/fact telemetry for the metrics log:
     ``recs`` (derived recommendations), ``n_conclusions``, ``reason_ms``, ``n_llm_facts``,
-    ``fact_llm_ms``. The 3 arms:
-      * ``plain``          — plain state only (control), no facts, no reasoning.
-      * ``facts-only``     — plain + adapter∪LLM facts rendered as premises; NO PLN.
-      * ``facts+chaining`` — same facts + PLN-derived recommendations (isolates chaining's value).
-    Both fact arms make the SAME extra fact-proposal call (arm parity), so the only difference
-    between them is the PLN engine.
+    ``fact_llm_ms``. The arms:
+      * ``plain``            — plain state only (control), no facts, no reasoning.
+      * ``facts-only``       — plain + adapter∪LLM facts rendered as premises; NO PLN.
+      * ``facts+chaining``   — same facts + v1 PLN-derived recommendations (rules.metta).
+      * ``facts+chaining-v2``— v2 atomspace: world overlay from raw state + rulebook + player,
+                               chained by reason_v2 (isolates the KB+engine swap).
+    All fact arms make the SAME extra fact-proposal call (arm parity). ``raw`` (the pre-normalize
+    llm_optimized state) is required by the v2 arm's overlay generator.
     """
     plain = llm_agent.render_plain(norm)
     extra = {"reason_ms": None, "recs": [], "n_conclusions": 0, "hops": 0,
@@ -138,15 +146,22 @@ def _context(arm, norm):
     if not _uses_chaining(arm):
         return ctx, extra
 
-    # facts+chaining: PLN multi-hop over the merged facts -> grounded, specific recommendations.
-    # derive_traced records the derivation proactively (Issue #3): a PlnTrace captured at decision
-    # time, later saved by run() and linked from the per-turn record + move records.
-    t0 = time.time()
-    recs, trace = reason.derive_traced(facts, context={"arm": arm})
-    extra["reason_ms"] = int((time.time() - t0) * 1000)
+    # --- v2 arm: reason over the colleague's atomspace (rulebook + world(raw) + player) --------
+    if _is_v2(arm):
+        t0 = time.time()
+        recs, v2meta = reason_v2.derive(raw or {})   # meta carries the real hop depth
+        extra["reason_ms"] = int((time.time() - t0) * 1000)
+        trace = None                                 # v2 chainer keeps its own provenance
+        extra["hops"] = v2meta.get("hops", 0)
+    else:
+        # facts+chaining: v1 PLN multi-hop over the merged facts. derive_traced records a PlnTrace
+        # at decision time (Issue #3), later saved by run() and linked from the per-turn record.
+        t0 = time.time()
+        recs, trace = reason.derive_traced(facts, context={"arm": arm})
+        extra["reason_ms"] = int((time.time() - t0) * 1000)
+        extra["hops"] = len(trace.hops) if trace is not None else 0
     extra["recs"] = recs
     extra["n_conclusions"] = len(recs)
-    extra["hops"] = len(trace.hops) if trace is not None else 0
     extra["trace"] = trace
     extra["trace_id"] = trace.trace_id if trace is not None else None
     grounded = [ground.ground(r, norm) for r in recs]   # concrete, legality-checked (None if no fit)
@@ -181,7 +196,7 @@ async def run(arm, seed, hours, max_turns, out_dir):
                 st = await turncycle.get_state(ws) or st
                 norm = adapter.normalize_state(st)
                 cur = turncycle.turn_of(st)
-                ctx, extra = _context(arm, norm)
+                ctx, extra = _context(arm, norm, raw=st)
                 recs = extra["recs"]
                 reason_ms = extra["reason_ms"]
                 n_conc = extra["n_conclusions"]
@@ -262,7 +277,8 @@ async def run(arm, seed, hours, max_turns, out_dir):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--arm", choices=["plain", "facts-only", "facts+chaining", "pln"], required=True)
+    ap.add_argument("--arm", choices=["plain", "facts-only", "facts+chaining", "facts+chaining-v2", "pln"],
+                    required=True)
     ap.add_argument("--game-id", required=True)
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--hours", type=float, default=10.0)

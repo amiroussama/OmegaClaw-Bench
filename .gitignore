@@ -8,3 +8,10 @@ venv/
 # FreeCiv run artifacts are regenerated; keep committed sample runs but ignore fresh ones.
 benchmarks/freeciv/ab_runs/tmp_*/
 benchmarks/freeciv/viz/data/
+
+# Colleague's atomspace-v2 under evaluation: bundles GPL freeciv ruleset data
+# ("do not vendor into the MIT repo" per its README). Kept local, never committed.
+benchmarks/freeciv/v2_scratch/
+
+# local provider secrets (never commit)
+.env
