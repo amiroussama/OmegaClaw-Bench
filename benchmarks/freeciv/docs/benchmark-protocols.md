@@ -6,11 +6,21 @@ machine-readable files the dashboard consumes (Issue #5).
 ## 1. The two protocols
 
 ### A/B (parallel, each arm vs the built-in AI)
-Two independent games — a `pln` arm and a `plain` arm — each played against the game AI with the
-same model/provider/seed/validation. The **only** difference is the state representation the LLM
-sees: the `pln` arm's prompt carries MeTTa/PLN-derived recommendations, the `plain` arm sees the
-same facts without them. Scripts: `ab_sim.py`, launcher `ab_run.sh`. Output: `pln.jsonl` /
-`plain.jsonl` → `comparison.{md,json}` via `ab_report.py`.
+Independent games — one per **arm** — each played against the game AI with the same
+model/provider/seed/validation. The **only** difference between arms is the state representation
+the LLM sees. The arms (`ab_sim.py:ARMS`):
+- `plain` — plain state only (control): no facts, no reasoning.
+- `facts-only` — plain + adapter∪LLM facts as premises, but **no** PLN.
+- `facts+chaining` — the same facts **plus** v1 PLN-derived recommendations (`rules.metta`).
+- `facts+chaining-v2` *(optional)* — reasons over the atomspace-v2 KB+engine (`reason_v2`) instead
+  of `rules.metta`; needs the v2 scratch dir.
+
+The **primary contrast is `facts+chaining` vs `facts-only`** — it isolates the marginal value of
+PLN chaining while holding the extra fact-proposal call constant (`facts-only` vs `plain` isolates
+the value of the facts themselves). When the v2 arm is present, the reporters also contrast
+`facts+chaining-v2` vs `facts+chaining`. Scripts: `ab_sim.py`, launcher `ab_run.sh` (default runs
+the 3 core arms; add v2 via `ARMS_TO_RUN`). Output: `<arm>.jsonl` → `comparison.{md,json}` via
+`ab_report.py`; batched via `batch/aggregate.py`.
 
 ### Duel (head-to-head mirror pair)
 One 1v1 game with PLN on one side and plain-LLM on the other, played twice as a **mirror pair**
@@ -19,9 +29,9 @@ signal. Scripts: `duel_sim.py`, launcher `duel_run.sh`. Output: `duel.jsonl` per
 `duel_comparison.{md,json}` via `duel_report.py`.
 
 ### When to use which (Ikle / Machiels recommendation)
-- **A/B for rapid, single-variable PLN-rule iteration.** It is cheaper (2 games/seed, no
-  opponent-interaction confound) and its per-turn trajectories are directly comparable, so it
-  detects a change faster. Use it while iterating on `rules.metta` / the mapping.
+- **A/B for rapid, single-variable PLN-rule iteration.** It is cheaper (one game per arm/seed —
+  the 3 core arms, no opponent-interaction confound) and its per-turn trajectories are directly
+  comparable, so it detects a change faster. Use it while iterating on `rules.metta` / the mapping.
 - **Duel to confirm a stable A/B delta.** Head-to-head is the harder, adversarial test; run it
   (batched, with the sign test) once A/B suggests PLN helps, to check the effect survives direct
   competition.
