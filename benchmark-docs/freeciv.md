@@ -47,8 +47,9 @@ while accepting all legal ones. Detail: [`benchmarks/freeciv/docs/issue-6-freeci
 
 > **Runtime-shape caveat (found live):** the real `civcom.build_llm_optimized_state` differs from the
 > documented `state_extractor` — `strategic.score`/`economic.gold`/`research` rather than
-> `victory_progress.current_score`/`economic.resources.*`. `player.score` reads **-1** and
-> score/gold/science log as **0** live. `cities/units/techs/turns` parse correctly, so all experiment
+> `victory_progress.current_score`/`economic.resources.*`. `gold`/`score` extraction was since
+> fixed (Issue #5 — see §5), so `Gold`/`Score` now read live (gold=50 in the turn-1 snapshot);
+> `science` still logs as **0**. `cities/units/techs/turns` parse correctly, so all experiment
 > verdicts rest on those. See [`benchmarks/freeciv/samples/README.md`].
 
 ### Issue #25 — turn-cycle / `end_turn` handshake
@@ -162,7 +163,7 @@ raises before anything malformed is loaded into a space.
 (Inheritance Unit_112 Type_workers)
 (Inheritance Tech_AdvancedFlight Researched)
 (Evaluation (Predicate At)      (List Unit_102 14 42))      ; its position
-(Evaluation (Predicate Gold)    (List Player_0 0))          ; gold=0 (proxy-unavailable, see §1 caveat)
+(Evaluation (Predicate Gold)    (List Player_0 50))         ; gold=50 (extraction fixed, Issue #5)
 (Evaluation (Predicate Science) (List Player_0 0))
 (Evaluation (Predicate Score)   (List Player_0 0))
 ; each fact above is also emitted as a sentence, e.g.

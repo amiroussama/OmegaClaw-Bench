@@ -53,9 +53,9 @@ Full tables: `benchmarks/atomspace/*_results.md`.
 
 | Tier | Result | Headline |
 | --- | --- | --- |
-| T0.1 nal_truth | **PASSED** | hyperon 236/236 truth cases + 4/4 rule cases at eps 1e-6 (max abs delta 3.1e-11); pure backend 3/3 rule cases (arrow-form NAL skipped by design); petta SKIPPED. |
-| T0.2 atomstore | **PASSED** | fidelity 1000/1000 (100%); 0/1320 cross-scope leaks; 67/67 supersession excluded-by-default AND visible-on-request; crash recovery clean (integrity_check=ok, 250/250 rows after os._exit(1)); hydrate 1k=4.4ms, 10k=43.7ms; re-transmission reduction 93.3% (1k) / 95.4% (10k). |
-| T0.3 mcp_conformance | **PASSED** (first run FAILED; product fixed, gate held) | Final: 52/52 cases; worst tool p95 4.7ms << 150ms gate; stdio transport ok (11 tools via real MCP initialize/list/call); interleaving 3/3 lossless trials. |
+| T0.1 nal_truth | **PASSED** (hyperon on host + **PeTTa in container**) | hyperon 236/236 truth + 4/4 rule cases at eps 1e-6 (max abs delta 3.1e-11) on the host; **petta 236/236 truth + 4/4 rule cases (max abs delta 3.08e-11, 17.4s)** in the OmegaClaw container (2026-07-21); pure backend 3/3 rule cases (arrow-form NAL skipped by design). PeTTa is no longer SKIPPED — parity is empirically proven on both engines. |
+| T0.2 atomstore | **PASSED** | fidelity 1000/1000 (100%); 0/1320 cross-scope leaks; 67/67 supersession excluded-by-default AND visible-on-request; crash recovery clean (integrity_check=ok, 250/250 rows after os._exit(1)); hydrate 1k=4.6ms, 10k=44.5ms; re-transmission reduction 93.3% (1k) / 95.4% (10k). |
+| T0.3 mcp_conformance | **PASSED** (first run FAILED; product fixed, gate held) | Final: 52/52 cases; worst tool p95 8.0ms << 150ms gate; stdio transport ok (11 tools via real MCP initialize/list/call); interleaving 3/3 lossless trials. |
 
 T0.3 history — the gate did its job. The FIRST run FAILED (51/52 cases,
 interleaving 0/3 lossless) on three product defects: (1) `atom_assert` RAISED
@@ -71,6 +71,77 @@ read-modify-write) and the suite re-run unchanged — except one fixture whose
 *expectation* encoded the old silent-fallback behavior for invalid explicit
 scope keys; the fixed product now returns a structured error there, which the
 fixture now requires.
+
+PeTTa parity (2026-07-21) — the register's #1 risk ("hyperon/PeTTa drift
+unverified in practice") is now closed, but only after the gate exposed two real
+product defects the earlier host-only runs could not: (1) `lib_compat.metta`
+defined binary `min`/`max` for hyperon, which PeTTa rejects as `No permission to
+modify static procedure min/3` and aborts the whole program — fixed by making
+the shim backend-conditional (`lib_source(minmax_shim=False)` for the PeTTa
+backend; the vendored lib_nal/lib_pln stay byte-identical); (2) the
+`PettaSubprocessBackend` output parser expected a bracketed `[...]` result form,
+while this PeTTa (swipl) build emits ANSI-coloured translation noise followed by
+bare `(atom (stv f c))` / scalar result lines after a `^^^^` goal terminator —
+fixed to strip ANSI and harvest post-marker result lines (product `_run_program`
+and the benchmark's truth-case `_petta_runner`). Reproduce with
+`scripts/petta_parity.sh` (host-side, spins a throwaway OmegaClaw container).
+
+## T1 results
+
+Runs of 2026-07-21 on the same host venv. Host-runnable and deterministic (no
+LLM). Full tables: `benchmarks/atomspace/{hybrid_retrieval,revision_staleness,scope_routing}_results.md`.
+
+| Tier | Result | Headline |
+| --- | --- | --- |
+| T1.1 hybrid_retrieval | **PASSED** | precision@5 candidate 0.5625 vs baseline 0.40 (delta **+0.1625** >= +0.15); recall@10 1.0 vs 0.729; exact McNemar (b=65, c=0) **p = 4.9e-13** < 0.05 over 80 queries; injected tokens **x1.10** <= 1.5x. |
+| T1.2 revision_staleness | **PASSED** | current-answer accuracy **1.0** (>= 0.9) vs baseline 0.167 (delta **+0.833** >= +0.25); contradiction-leak **0.0** (<= 0.05) vs baseline 0.833, over 60 knowledge-update cases (30 revision + 30 supersession). |
+| T1.3 scope_routing | **PASSED** | routing accuracy **1.0** (48/48 cwd probes across 6 repos incl. a clone sharing a remote, a no-remote repo, a non-git dir) >= 0.95; cross-project leakage **0** / 300 cross-scope lookups (hard gate). |
+
+T1.1's candidate is `hybrid_recall` (lexical recall + 1-hop PLN); its edge is a
+transitive `(affected ..)` edge that is never stored, surfaced only by inference.
+Both arms inject the same 5-atom budget (the candidate spends one slot on its top
+inferred fact), which is why the token multiplier stays at 1.10x. The fixtures
+place lexical distractors on the chain ENDPOINTS but not its middle join node —
+a distractor on the join term would trip the inference engine's common-term
+pruning and suppress the very deduction under test (a real product behaviour the
+fixture documents rather than hides). T1.2's baseline is an append-only /
+no-supersede memory; T1.3's leakage section drives the T0.2 isolation check
+through `resolve()`/`db_path()` auto-routing rather than hand-picked keys.
+
+## T2 results
+
+Runs of 2026-07-21 on the same host venv (hyperon 0.2.10; in-process inference
+so all 80 cases share one warm runtime — the pre-registered latency basis).
+Full table: `benchmarks/atomspace/multihop_impact_results.md`.
+
+| Tier | Result | Headline |
+| --- | --- | --- |
+| T2.1 multihop_impact | **PASSED** | exact-match PLN 1.0 vs baseline 0.50 (delta **+0.50** >= +0.25); net decision-flips-to-correct **+40/80** (40 to-correct, 0 to-wrong) >= +20; exact two-sided sign test **p = 1.8e-12** < 0.05; median inference **108 ms** < 2s. |
+
+The 80 cases pre-register four families (`multihop_impact_fixtures.py`,
+`random.Random(2101)`): 25 direct-positive + 15 negative controls (where the
+retrieval baseline is *correct* — proving it is not a strawman: baseline exact
+= 40/80 = 0.50), 25 impact-chain (2–3 edge `(Implication (affected ..) ..)`
+deductions to a never-stored composed edge), and 15 invariant (a
+variable-carrying rule that cannot be a stored atom). Both arms receive the
+identical premises and the identical trusted rule text; the baseline
+(`bridge.lexical_recall` + unify, no inference) structurally cannot return a
+composed/derived edge, so every multihop case is a decision-flip.
+
+The invariant family forced the one real feature gap and its fix: the store
+firewall rightly bans `$vars`, so universally-quantified invariants ("a handler
+that reads secrets requires an auth-check") cannot be stored atoms. They are now
+expressed as **trusted `code_rules`** — a committed `.atomspace/code_rules.metta`
+loaded into the runtime as `(= (|~code ...) ...)` equations (the trusted
+channel, never through `validate_atom`), linted by `validate.validate_code_rules`
+(top-level forms must define only the dedicated `|~code`/`|-code` heads; no I/O,
+space-mutation, or py-escape tokens). Measured in two pre-registered modes: with
+the vendored PLN engine ALONE the invariant family is 0/15 (delta still +0.31,
+net +25 — the gate passes on deduction alone) and with `code_rules` loaded it is
+15/15 (delta +0.50, net +40). The gate was not weakened by the mechanism; the
+mechanism widened an already-passing margin and closed the invariant class. T0.1
+truth parity was re-run unchanged after the inference-layer change (hop-1
+single-premise application over seed premises) and still PASSES 236/236.
 
 ## Methodology notes
 
