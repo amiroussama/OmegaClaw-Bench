@@ -45,6 +45,11 @@ recreate() {
 wait_gone() { while docker ps --filter "name=$1" --format '{{.Names}}' | grep -q "$1"; do sleep 30; done; }
 
 sim() {  # $1=container_name  $2=in-container python cmd
+  # Remove any leftover container with this name first: sim() uses `docker run` (no --rm) so an
+  # exited game from a prior batch keeps the name, and a fresh `docker run --name` would fail
+  # silently — wait_gone() (which only checks RUNNING containers) would then return immediately and
+  # the worker would race through every arm producing no data. rm -f makes relaunch collision-proof.
+  docker rm -f "$1" >/dev/null 2>&1 || true
   docker run -d --name "$1" --network host --entrypoint bash \
     -v "$OMEGA":/PeTTa/repos/OmegaClaw-Core \
     -e SNET_API_KEY -e FREECIV_PROVIDER="$PROV" -e FREECIV_PROXY_WS="$WS" \
