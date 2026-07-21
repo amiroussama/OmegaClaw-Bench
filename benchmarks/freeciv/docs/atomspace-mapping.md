@@ -59,11 +59,14 @@ the validator. *Effects* (what an action changes) are handled by the game engine
 atoms.
 
 ### 2.4 Inferred strategic facts & rules
-The four `Implication` rules in `rules.metta` (`MAPPING.md` §2). These are **strategic
-heuristics**, not laws — "an undefended city is usually worth defending". That is why their truth
-is intentionally uncertain (frequency 0.8–0.9, confidence 0.7–0.8) and **must never be 1.0**.
-Three fire under the current PLN engine (Inheritance-form); the Threatens rule is Evaluation-form
-and currently inert (kept for future work).
+The `Implication` rules in `rules.metta` (`MAPPING.md` §2): **11** in total after the multi-hop
+expansion — 7 with a `Recommend` conclusion (the count the AtomSpace snapshot reports) plus 4
+intermediate `State`/`Priority` chain rules. These are **strategic heuristics**, not laws — "an
+undefended city is usually worth defending". That is why their truth is intentionally uncertain
+(frequency 0.8–0.9, confidence 0.7–0.8) and **must never be 1.0**. The three direct one-hop
+Inheritance-form rules (Defend/Food/Settle) fire under the host PLN engine; the Threatens rule is
+Evaluation-form and currently inert (kept for future work); the multi-hop chains fire in-container
+via the `reason.derive` fixpoint.
 
 ## 3. How to review a mapping change
 

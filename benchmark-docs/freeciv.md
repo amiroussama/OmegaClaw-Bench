@@ -145,8 +145,11 @@ same space:
 Pairing a fact sentence with a rule via `(|~ fact rule)` fires lib_pln's Modus Ponens: the rule's
 variable unifies with the fact's entity, deriving a grounded **recommendation** atom, e.g.
 `((Inheritance City_1 Undefended) (stv 1.0 0.99))` + the Undefended rule →
-`((Recommend City_1 Defend) (stv 0.9 0.71))`. (A fourth `Threatens ⇒ Retreat` `Evaluation`-form
-rule is kept but does **not** fire under current lib_pln clauses.) `reason.derive` filters out
+`((Recommend City_1 Defend) (stv 0.9 0.71))`. (Beyond these direct one-hop rules, `rules.metta`
+adds multi-hop chain rules — intermediate `State`/`Priority` predicates that compose into
+recommendations in-container via the fixpoint — plus a `Threatens ⇒ Retreat` `Evaluation`-form
+rule that is kept but does **not** fire under current lib_pln clauses; 11 rules in total.)
+`reason.derive` filters out
 ungrounded templates (`(Recommend $c Defend)`) that leak from non-matching fact/rule pairs, so only
 concrete, grounded recommendations reach the LLM.
 
