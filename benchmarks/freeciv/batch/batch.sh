@@ -20,6 +20,18 @@ cd "$OMEGA"
 set -a; . ./.env; set +a
 : "${SNET_API_KEY:?SNET_API_KEY not set in .env}"
 
+# This image's PeTTa has no `git-import!`, so reason.py's default (library …) imports silently
+# no-op and lib_pln never loads → the v1 PLN arm would derive 0 conclusions. Import the reasoning
+# libs by their real in-container paths so PLN actually fires. (The v2 arm reasons in pure Python
+# and does not need this.) Override in the environment to change it.
+export OMEGACLAW_REASON_IMPORTS="${OMEGACLAW_REASON_IMPORTS:-$(printf '%s\n' \
+  '!(import! &self "repos/OmegaClaw-Core/core/lib_nal.metta")' \
+  '!(import! &self "repos/OmegaClaw-Core/core/lib_pln.metta")' \
+  '!(import! &self "repos/OmegaClaw-Core/benchmarks/freeciv/rules.metta")')}"
+# A/B arms + protocol modes (forwarded to each worker). Defaults preserve the 3-arm + duel batch.
+export AB_ARMS="${AB_ARMS:-facts+chaining facts-only plain}"
+export MODES="${MODES:-duel ab}"
+
 N_STACKS="${N_STACKS:-3}"
 N_SEEDS="${N_SEEDS:-20}"
 SEED_BASE="${SEED_BASE:-1001}"
@@ -66,6 +78,7 @@ for inst in $(seq 1 "$N_STACKS"); do
     -v "$OMEGA":"$OMEGA" -v "$STACK":"$STACK" \
     -e SNET_API_KEY -e FREECIV_PROVIDER="${FREECIV_PROVIDER:-SNET}" \
     -e BATCH_REL="$BATCH_REL" -e DUEL_MAX_TURNS -e AB_MAX_TURNS -e GAME_HOURS \
+    -e OMEGA="$OMEGA" -e STACK="$STACK" -e AB_ARMS -e MODES -e OMEGACLAW_REASON_IMPORTS \
     --entrypoint sh docker:cli "$OMEGA/benchmarks/freeciv/batch/worker.sh" "$inst" "$port" "$myseeds" >/dev/null 2>&1
   echo "  worker container: fc-worker-$inst-$TS"
 done

@@ -26,9 +26,12 @@ import metrics as _metrics  # noqa: E402
 METRICS = ("n_cities", "n_units", "n_techs")
 ERA_THRESHOLDS = ("4", "6")  # tech-count thresholds aggregated as era-progression deltas
 
-# The 3 A/B arms and the pairwise contrasts (primary first: the marginal value of PLN chaining).
-AB_ARMS = ("plain", "facts-only", "facts+chaining")
-AB_CONTRASTS = (("facts+chaining", "facts-only"),   # PRIMARY: isolates chaining
+# The A/B arms and the pairwise contrasts. A contrast only accrues games for seeds where BOTH arms
+# ran, so listing the v2 arm/contrast is backward-compatible: it reports 0 games on normal 3-arm
+# batches, and the v1/facts-only/plain contrasts report 0 games on a v2-only batch.
+AB_ARMS = ("plain", "facts-only", "facts+chaining", "facts+chaining-v2")
+AB_CONTRASTS = (("facts+chaining-v2", "facts+chaining"),  # atomspace-v2 vs v1 rules (when present)
+                ("facts+chaining", "facts-only"),   # PRIMARY (3-arm): isolates chaining
                 ("facts+chaining", "plain"),
                 ("facts-only", "plain"))
 

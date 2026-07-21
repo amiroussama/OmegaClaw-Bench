@@ -13,8 +13,13 @@
 set -u
 INST="$1"; PROXY_PORT="$2"; SEEDS="$3"
 MODES="${MODES:-duel ab}"
-OMEGA=/home/rojo-dev/Repos/OmegaClaw-Core
-STACK=/home/rojo-dev/Repos/freeciv-llm
+# Repo + stack paths come from the environment (batch.sh passes them); the hardcoded values are a
+# fallback for standalone use. OMEGA must be the checkout whose working tree carries the code to run.
+OMEGA="${OMEGA:-/home/rojo-dev/Repos/OmegaClaw-Core}"
+STACK="${STACK:-/home/rojo-dev/Repos/freeciv-llm}"
+# A/B arms to run per seed (space-separated ab_sim --arm values). Default: the 3-arm experiment.
+# For the atomspace-v2 evaluation set AB_ARMS="facts+chaining facts+chaining-v2".
+AB_ARMS="${AB_ARMS:-facts+chaining facts-only plain}"
 WS="ws://localhost:$PROXY_PORT/llmsocket/8002"
 DUEL_MT="${DUEL_MAX_TURNS:-250}"
 AB_MT="${AB_MAX_TURNS:-250}"
@@ -43,6 +48,7 @@ sim() {  # $1=container_name  $2=in-container python cmd
   docker run -d --name "$1" --network host --entrypoint bash \
     -v "$OMEGA":/PeTTa/repos/OmegaClaw-Core \
     -e SNET_API_KEY -e FREECIV_PROVIDER="$PROV" -e FREECIV_PROXY_WS="$WS" \
+    -e OMEGACLAW_METTA_CMD -e OMEGACLAW_METTA_CWD -e OMEGACLAW_REASON_IMPORTS -e OMEGACLAW_V2_DIR \
     omegaclaw:local -lc "$2" >/dev/null 2>&1
 }
 report() {  # $1=script  $2=dir
@@ -67,19 +73,16 @@ for SEED in $SEEDS; do
   ;; esac
 
   case " $MODES " in *" ab "*)
-    # 3-arm experiment: plain (control) / facts-only (facts, no PLN) / facts+chaining (facts + PLN).
-    # The primary contrast is facts+chaining vs facts-only (the marginal value of chaining).
-    recreate; log "seed $SEED A/B facts+chaining arm"
-    sim "fc-b$INST-s$SEED-abc" "exec python3 -u /PeTTa/repos/OmegaClaw-Core/benchmarks/freeciv/ab_sim.py --arm 'facts+chaining' --game-id b${INST}ac_$SEED --seed $SEED --hours $HRS --max-turns $AB_MT --out /PeTTa/repos/OmegaClaw-Core/$SD/ab"
-    wait_gone "fc-b$INST-s$SEED-abc"
-
-    recreate; log "seed $SEED A/B facts-only arm"
-    sim "fc-b$INST-s$SEED-abf" "exec python3 -u /PeTTa/repos/OmegaClaw-Core/benchmarks/freeciv/ab_sim.py --arm 'facts-only' --game-id b${INST}af_$SEED --seed $SEED --hours $HRS --max-turns $AB_MT --out /PeTTa/repos/OmegaClaw-Core/$SD/ab"
-    wait_gone "fc-b$INST-s$SEED-abf"
-
-    recreate; log "seed $SEED A/B plain arm"
-    sim "fc-b$INST-s$SEED-abq" "exec python3 -u /PeTTa/repos/OmegaClaw-Core/benchmarks/freeciv/ab_sim.py --arm plain --game-id b${INST}aq_$SEED --seed $SEED --hours $HRS --max-turns $AB_MT --out /PeTTa/repos/OmegaClaw-Core/$SD/ab"
-    wait_gone "fc-b$INST-s$SEED-abq"
+    # A/B experiment over $AB_ARMS (default: plain / facts-only / facts+chaining; the primary
+    # contrast is facts+chaining vs facts-only — the marginal value of chaining). Set AB_ARMS to
+    # "facts+chaining facts+chaining-v2" to compare the v1 rules against the atomspace-v2 arm.
+    ai=0
+    for ARM in $AB_ARMS; do
+      ai=$((ai + 1))
+      recreate; log "seed $SEED A/B arm '$ARM'"
+      sim "fc-b$INST-s$SEED-ab$ai" "exec python3 -u /PeTTa/repos/OmegaClaw-Core/benchmarks/freeciv/ab_sim.py --arm '$ARM' --game-id b${INST}a${ai}_$SEED --seed $SEED --hours $HRS --max-turns $AB_MT --out /PeTTa/repos/OmegaClaw-Core/$SD/ab"
+      wait_gone "fc-b$INST-s$SEED-ab$ai"
+    done
     report ab_report.py "$SD/ab"; log "seed $SEED ab report done"
   ;; esac
 
