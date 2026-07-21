@@ -31,12 +31,12 @@ question: **does OmegaClaw's PLN/MeTTa reasoning make an LLM play better than th
 
 ### Issue #6 — deterministic state→atoms adapter + action validation
 Turns raw `llm_optimized` game states into deterministic PLN atoms and gates every candidate action
-through `validate_action` before it reaches the server. KPI benchmark over 6 schema-grounded fixture
+through `validate_action` before it reaches the server. KPI benchmark over 7 schema-grounded fixture
 states (`python3 benchmarks/freeciv/benchmark.py`):
 
 | Metric | baseline (raw text, no gate) | candidate (atoms + gate) |
 | --- | --- | --- |
-| States converted to atoms | 0/6 | **6/6** |
+| States converted to atoms | 0/7 | **7/7** |
 | Mean field coverage | 0.00 | **1.00** |
 | **Invalid-action submission rate** | **1.00** | **0.00** |
 | Legal-action acceptance | n/a | 1.00 |

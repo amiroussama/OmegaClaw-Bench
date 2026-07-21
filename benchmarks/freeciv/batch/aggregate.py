@@ -256,7 +256,20 @@ def main():
         "ab": ab_summaries,
         "per_seed": per_seed,
     }
-    with open(os.path.join(base, "aggregate.json"), "w", encoding="utf-8") as f:
+
+    # Guard: if no games were collected (raw per-seed JSONL absent — e.g. gitignored and not
+    # downloaded), do NOT overwrite committed aggregate.{md,json} with an empty zero-game report.
+    total_games = len(duel_games) + sum(len(v) for v in ab_contrast_games.values())
+    out_json = os.path.join(base, "aggregate.json")
+    out_md = os.path.join(base, "aggregate.md")
+    if total_games == 0:
+        msg = ("aggregate: found 0 games under %s — raw per-seed JSONL is absent "
+               "(gitignored / not downloaded?)." % base)
+        if os.path.exists(out_json) or os.path.exists(out_md):
+            sys.exit(msg + " Refusing to overwrite existing aggregate.{md,json} with an empty report.")
+        sys.exit(msg + " Nothing to aggregate; not writing an empty report.")
+
+    with open(out_json, "w", encoding="utf-8") as f:
         json.dump(result, f, indent=2)
 
     lines = ["# 3-arm PLN FreeCiv batch — statistical aggregate", "",
@@ -303,7 +316,7 @@ def main():
               "Metric p≈: normal approximation to the paired-t two-sided p (use with care for small n). "
               "Era Δ skips censored pairs (a side that never reached N techs)._"]
     md = "\n".join(lines)
-    with open(os.path.join(base, "aggregate.md"), "w", encoding="utf-8") as f:
+    with open(out_md, "w", encoding="utf-8") as f:
         f.write(md + "\n")
     print(md)
 

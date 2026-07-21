@@ -49,8 +49,12 @@ launch () {  # label arm game_id  (label is the container/game tag; arm is the a
   echo "launched label=${label} arm=${arm} container=fc-ab-${label}-${TS}"
 }
 
-# ARMS_TO_RUN: space-separated "label:arm" pairs (default: v1 PLN vs plain vs v2 atomspace).
-ARMS_TO_RUN="${ARMS_TO_RUN:-pln:pln plain:plain v2:facts+chaining-v2}"
+# ARMS_TO_RUN: space-separated "label:arm" pairs. Default is the full 3-arm experiment so the
+# reporters' PRIMARY contrast (facts+chaining vs facts-only — the marginal value of chaining,
+# holding the fact-proposal call constant) is actually produced by a plain single run. The v2
+# atomspace arm is opt-in (it needs the v2 scratch dir), e.g.:
+#   ARMS_TO_RUN="fc:facts+chaining fo:facts-only plain:plain v2:facts+chaining-v2" bash ab_run.sh
+ARMS_TO_RUN="${ARMS_TO_RUN:-fc:facts+chaining fo:facts-only plain:plain}"
 for pair in $ARMS_TO_RUN; do
   launch "${pair%%:*}" "${pair#*:}" "ab_${pair%%:*}_${TS}"
 done
