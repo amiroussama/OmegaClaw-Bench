@@ -9,6 +9,13 @@ venv/
 benchmarks/freeciv/ab_runs/tmp_*/
 benchmarks/freeciv/viz/data/
 
+# Batch/live-run RAW artifacts are large and regenerable; only the aggregate/comparison summaries
+# (aggregate.{md,json}, comparison.{md,json}, manifest.json) are meant to be committed as evidence.
+benchmarks/freeciv/ab_runs/**/*.jsonl
+benchmarks/freeciv/ab_runs/**/*.heartbeat
+benchmarks/freeciv/ab_runs/**/traces/
+benchmarks/freeciv/ab_runs/**/atomspace_*.json
+
 # Colleague's atomspace-v2 under evaluation: bundles GPL freeciv ruleset data
 # ("do not vendor into the MIT repo" per its README). Kept local, never committed.
 benchmarks/freeciv/v2_scratch/
