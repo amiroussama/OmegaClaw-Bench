@@ -51,6 +51,21 @@ for _p in (_BENCH, _SRC):
 from freeciv import adapter, atoms, actions, client, turncycle  # noqa: E402
 import provider_config as pc  # noqa: E402
 
+try:  # best-effort core reasoning-trace envelope (issue-7 §6); absent off-container -> no-op
+    import tracing  # noqa: E402
+except Exception:  # noqa: BLE001
+    tracing = None
+
+
+def _trace(fn, *a, **k):
+    """Call a core-tracing function if available; never raise."""
+    if tracing is None:
+        return
+    try:
+        getattr(tracing, fn)(*a, **k)
+    except Exception:  # noqa: BLE001
+        pass
+
 WS = os.environ.get("FREECIV_PROXY_WS", "ws://localhost:8002/llmsocket/8002")
 TOKEN = os.environ.get("FREECIV_API_TOKEN", "test-token-fc3d-001")
 GAME = os.environ.get("FREECIV_GAME_ID", "omega_llm")
@@ -127,6 +142,7 @@ async def run():
             print("[llm] no populated state")
             return 1
 
+        _trace("begin_session", "freeciv-llm-%s" % GAME)
         totals = {"proposed": 0, "submitted": 0, "blocked": 0, "turns_advanced": 0, "turns_seen": []}
         cur = turncycle.turn_of(st)
         # Drive by OBSERVED turn advances, not a fixed cycle count: re-deciding over a held
@@ -138,6 +154,7 @@ async def run():
             facts = adapter.facts_from_state(norm)
             sents = atoms.sentences_from_facts(facts)
             mine = [u for u in norm["units"] if u.get("owner") == norm["player_perspective"]]
+            _trace("begin_iteration", cur, state_hash=adapter.state_hash(st))
             print("\n=== turn %s | %d atoms | %d units ===" % (cur, len(sents), len(mine)))
             for a in llm_decide(sents, mine):
                 totals["proposed"] += 1
@@ -148,9 +165,12 @@ async def run():
                     print("   SUBMIT %s" % json.dumps(a))
                 else:
                     totals["blocked"] += 1
+                    _trace("trace_error", stage="freeciv_validate", code=v.error_code,
+                           message=v.error_message)
                     print("   BLOCK  %s (%s)" % (json.dumps(a), v.error_code))
             await turncycle.send_end_turn(ws)
             nt = await turncycle.await_turn_advance(ws, cur, timeout=40)
+            _trace("end_iteration")
             if nt is None:
                 print("   [warn] turn did not advance past %s within timeout" % cur)
                 break

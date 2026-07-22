@@ -33,7 +33,6 @@ for _cp in (_ocp.path.join(_cp_root, "core", "src"), _ocp.path.join(_cp_root, "c
 import argparse
 import json
 import os
-import re
 import sys
 
 _HERE = os.path.dirname(os.path.abspath(__file__))            # benchmarks/freeciv/viz
@@ -42,25 +41,9 @@ _BENCH = os.path.dirname(_FREECIV)                            # benchmarks
 if _BENCH not in sys.path:
     sys.path.insert(0, _BENCH)
 
-from freeciv import adapter, atoms, reason  # noqa: E402
+from freeciv import adapter, atoms, reason, rulesparse  # noqa: E402
 
 _DEFAULT_STATE = os.path.join(_FREECIV, "samples", "real_state_turn1.json")
-_RULES = os.path.join(_FREECIV, "rules.metta")
-
-# Inheritance-form Implication rules: ((Implication (Inheritance $x <Attr>) (Recommend $x <Act>)) (stv f c))
-_RULE_RE = re.compile(
-    r"\(\(Implication\s+\(Inheritance\s+\$\w+\s+(\w+)\)\s+"
-    r"\(Recommend\s+\$\w+\s+(\w+)\)\)\s+\(stv\s+([\d.]+)\s+([\d.]+)\)\)")
-
-
-def _load_rules(path):
-    """Parse the firing Inheritance rules: [{attr, action, f, c}]."""
-    if not os.path.isfile(path):
-        return []
-    text = open(path, encoding="utf-8").read()
-    return [{"attr": m.group(1), "action": m.group(2),
-             "f": float(m.group(3)), "c": float(m.group(4))}
-            for m in _RULE_RE.finditer(text)]
 
 
 def _fact_rows(facts):
@@ -76,28 +59,12 @@ def _fact_rows(facts):
     return rows
 
 
-def _host_recs(facts, rules):
-    """Match Inheritance facts against the rules -> structured recommendation edges."""
-    by_attr = {r["attr"]: r for r in rules}
-    recs = []
-    for f in facts:
-        if f["pred"] != "Inheritance":
-            continue
-        rule = by_attr.get(f["obj"])
-        if rule:
-            recs.append({"entity": f["subj"], "action": rule["action"],
-                         "from_fact": atoms._statement(f),
-                         "rule": "Inheritance %s -> Recommend %s" % (f["obj"], rule["action"]),
-                         "engine_confirmed": False})
-    return recs
-
-
 def dump(state_path):
     raw = json.load(open(state_path, encoding="utf-8"))
     norm = adapter.normalize_state(raw)
     facts = adapter.facts_from_state(norm)
-    rules = _load_rules(_RULES)
-    recs = _host_recs(facts, rules)
+    rules = rulesparse.load_rules()
+    recs = rulesparse.host_recommendations(facts, rules)
 
     # Authentic engine (works in-container); annotate which host-matched recs it confirms.
     engine = reason.derive(atoms.sentences_from_facts(facts))
@@ -137,6 +104,15 @@ def main():
         json.dump(payload, f, indent=2)
     print("wrote %s — %d facts, %d recommendations (source=%s)" %
           (args.out, payload["n_facts"], payload["n_recommendations"], payload["source"]))
+
+    # Also emit the full AtomSpace snapshot (Issue #2) next to atoms.json for the inspector UI.
+    from freeciv import atomspace_export
+    raw = json.load(open(args.state, encoding="utf-8"))
+    snap = atomspace_export.snapshot_from_state(raw, state_file=os.path.relpath(args.state, _BENCH))
+    snap_out = os.path.join(os.path.dirname(args.out), "atomspace_snapshot.json")
+    atomspace_export.write_snapshot(snap, snap_out)
+    print("wrote %s — %s atoms, lint %s" %
+          (snap_out, sum(snap["counts"].values()), "OK" if snap["lint"]["ok"] else "ISSUES"))
     return 0
 
 

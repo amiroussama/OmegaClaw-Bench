@@ -24,6 +24,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r core/requirements.txt
           pip install -r requirements.txt
+          # pytest is the CI test runner for the "Moved autotests" step below; it is not a runtime
+          # dependency (the suites also run standalone as `python3 Autotests/test_*.py`), so it is
+          # installed here rather than pinned into requirements.txt.
+          pip install pytest
 
       - name: KPI benchmark suite
         run: python3 benchmarks/run_benchmark.py

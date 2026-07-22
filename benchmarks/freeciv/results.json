@@ -1,12 +1,12 @@
 {
   "summary": {
-    "n_fixtures": 6,
+    "n_fixtures": 7,
     "deterministic_all": true,
     "mean_field_coverage": 1.0,
     "atomized_states": {
       "baseline": 0,
-      "candidate": 6,
-      "total": 6
+      "candidate": 7,
+      "total": 7
     },
     "invalid_action_rate": {
       "baseline": 1.0,
@@ -72,6 +72,16 @@
       "category": "economy",
       "facts": 10,
       "atoms": 10,
+      "coverage": 1.0,
+      "deterministic": true,
+      "legal_accepted": "3/3",
+      "illegal_blocked": "2/2"
+    },
+    {
+      "id": "pln_settler_to_found_city",
+      "category": "expansion",
+      "facts": 7,
+      "atoms": 7,
       "coverage": 1.0,
       "deterministic": true,
       "legal_accepted": "3/3",

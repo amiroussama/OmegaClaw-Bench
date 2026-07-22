@@ -4,6 +4,9 @@
 > Paths in this historical report reflect their **original** locations at the time of the change
 > (e.g. `src/freeciv_tool.py` is now `benchmarks/freeciv/freeciv_tool.py`; `benchmarks/freeciv_benchmark.py`
 > is now `benchmarks/freeciv/benchmark.py`).
+> Counts here reflect that point in time (e.g. the **6**-fixture set, 13 legal + 12 illegal
+> actions); the current suite has **7** fixtures (16 legal + 14 illegal) — see
+> `benchmarks/freeciv/results.md`.
 
 **Branch:** `feat/freeciv-adapter` (off `main`, which has #1–#5 merged)
 **Issue:** #6 — "Build deterministic FreeCiv state-to-atoms and action adapter for benchmark runs"

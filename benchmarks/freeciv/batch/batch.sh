@@ -4,8 +4,9 @@
 # Stands up N_STACKS isolated freeciv-llm stacks (ports 8002, 8012, 8022, ...), splits N_SEEDS seeds
 # round-robin across them, and launches one durable docker:cli WORKER per stack. Each worker runs its
 # seeds SEQUENTIALLY (proxy = one active game at a time); across stacks the seeds run in PARALLEL.
-# Per seed a worker produces a duel mirror pair (g1/g2) and an A/B pair (pln/plain) with per-seed
-# reports. Aggregate anytime with aggregate.py (works on partial results).
+# Per seed a worker produces a duel mirror pair (g1/g2) and the 3-arm A/B set (facts+chaining /
+# facts-only / plain) with per-seed reports. Aggregate anytime with aggregate.py (works on partial
+# results); the primary contrast is facts+chaining vs facts-only (the marginal value of chaining).
 #
 # Workers are containers, so the whole batch survives terminal/session teardowns. Re-running batch.sh
 # starts a NEW batch dir; to resume a stopped batch just relaunch its workers (see README).
@@ -18,6 +19,18 @@ STACK="${FREECIV_LLM_DIR:-$HOME/Repos/freeciv-llm}"
 cd "$OMEGA"
 set -a; . ./.env; set +a
 : "${SNET_API_KEY:?SNET_API_KEY not set in .env}"
+
+# This image's PeTTa has no `git-import!`, so reason.py's default (library …) imports silently
+# no-op and lib_pln never loads → the v1 PLN arm would derive 0 conclusions. Import the reasoning
+# libs by their real in-container paths so PLN actually fires. (The v2 arm reasons in pure Python
+# and does not need this.) Override in the environment to change it.
+export OMEGACLAW_REASON_IMPORTS="${OMEGACLAW_REASON_IMPORTS:-$(printf '%s\n' \
+  '!(import! &self "repos/OmegaClaw-Core/core/lib_nal.metta")' \
+  '!(import! &self "repos/OmegaClaw-Core/core/lib_pln.metta")' \
+  '!(import! &self "repos/OmegaClaw-Core/benchmarks/freeciv/rules.metta")')}"
+# A/B arms + protocol modes (forwarded to each worker). Defaults preserve the 3-arm + duel batch.
+export AB_ARMS="${AB_ARMS:-facts+chaining facts-only plain}"
+export MODES="${MODES:-duel ab}"
 
 N_STACKS="${N_STACKS:-3}"
 N_SEEDS="${N_SEEDS:-20}"
@@ -65,6 +78,7 @@ for inst in $(seq 1 "$N_STACKS"); do
     -v "$OMEGA":"$OMEGA" -v "$STACK":"$STACK" \
     -e SNET_API_KEY -e FREECIV_PROVIDER="${FREECIV_PROVIDER:-SNET}" \
     -e BATCH_REL="$BATCH_REL" -e DUEL_MAX_TURNS -e AB_MAX_TURNS -e GAME_HOURS \
+    -e OMEGA="$OMEGA" -e STACK="$STACK" -e AB_ARMS -e MODES -e OMEGACLAW_REASON_IMPORTS \
     --entrypoint sh docker:cli "$OMEGA/benchmarks/freeciv/batch/worker.sh" "$inst" "$port" "$myseeds" >/dev/null 2>&1
   echo "  worker container: fc-worker-$inst-$TS"
 done

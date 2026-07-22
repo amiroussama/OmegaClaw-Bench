@@ -1,17 +1,25 @@
 #!/bin/sh
 # Per-stack batch worker (runs INSIDE a docker:cli container so it survives host/session teardowns).
 # Processes a queue of seeds SEQUENTIALLY on ONE isolated freeciv-llm stack instance. For each seed
-# it runs the duel mirror pair (g1 PLN=side0, g2 PLN=side1) and the A/B pair (pln arm, plain arm),
-# recreating the stack before EVERY game so each starts from a fresh turn-1 world (a plain restart
+# it runs the duel mirror pair (g1 PLN=side0, g2 PLN=side1) and the 3-arm A/B set (facts+chaining,
+# facts-only, plain), recreating the stack before EVERY game so each starts from a fresh turn-1
+# world (a plain restart
 # reloads the previous ephemeral save; only rm+compose-up clears it). One game at a time — the proxy
 # carries a single active game, so concurrency reconnect-storms.
 #
 # Args: $1=INST  $2=PROXY_PORT  $3="space separated seeds"
-# Env : SNET_API_KEY, BATCH_REL, FREECIV_PROVIDER, DUEL_MAX_TURNS, AB_MAX_TURNS, GAME_HOURS
+# Env : SNET_API_KEY, BATCH_REL, FREECIV_PROVIDER, DUEL_MAX_TURNS, AB_MAX_TURNS, GAME_HOURS,
+#       MODES (which protocols to run per seed; default "duel ab" — set "ab" or "duel" to skip one)
 set -u
 INST="$1"; PROXY_PORT="$2"; SEEDS="$3"
-OMEGA=/home/rojo-dev/Repos/OmegaClaw-Core
-STACK=/home/rojo-dev/Repos/freeciv-llm
+MODES="${MODES:-duel ab}"
+# Repo + stack paths come from the environment (batch.sh passes them); the hardcoded values are a
+# fallback for standalone use. OMEGA must be the checkout whose working tree carries the code to run.
+OMEGA="${OMEGA:-/home/rojo-dev/Repos/OmegaClaw-Core}"
+STACK="${STACK:-/home/rojo-dev/Repos/freeciv-llm}"
+# A/B arms to run per seed (space-separated ab_sim --arm values). Default: the 3-arm experiment.
+# For the atomspace-v2 evaluation set AB_ARMS="facts+chaining facts+chaining-v2".
+AB_ARMS="${AB_ARMS:-facts+chaining facts-only plain}"
 WS="ws://localhost:$PROXY_PORT/llmsocket/8002"
 DUEL_MT="${DUEL_MAX_TURNS:-250}"
 AB_MT="${AB_MAX_TURNS:-250}"
@@ -37,9 +45,15 @@ recreate() {
 wait_gone() { while docker ps --filter "name=$1" --format '{{.Names}}' | grep -q "$1"; do sleep 30; done; }
 
 sim() {  # $1=container_name  $2=in-container python cmd
+  # Remove any leftover container with this name first: sim() uses `docker run` (no --rm) so an
+  # exited game from a prior batch keeps the name, and a fresh `docker run --name` would fail
+  # silently — wait_gone() (which only checks RUNNING containers) would then return immediately and
+  # the worker would race through every arm producing no data. rm -f makes relaunch collision-proof.
+  docker rm -f "$1" >/dev/null 2>&1 || true
   docker run -d --name "$1" --network host --entrypoint bash \
     -v "$OMEGA":/PeTTa/repos/OmegaClaw-Core \
     -e SNET_API_KEY -e FREECIV_PROVIDER="$PROV" -e FREECIV_PROXY_WS="$WS" \
+    -e OMEGACLAW_METTA_CMD -e OMEGACLAW_METTA_CWD -e OMEGACLAW_REASON_IMPORTS -e OMEGACLAW_V2_DIR \
     omegaclaw:local -lc "$2" >/dev/null 2>&1
 }
 report() {  # $1=script  $2=dir
@@ -52,23 +66,30 @@ for SEED in $SEEDS; do
   mkdir -p "$OMEGA/$SD/duel/g1" "$OMEGA/$SD/duel/g2" "$OMEGA/$SD/ab"
   log "=== seed $SEED START (duel_mt=$DUEL_MT ab_mt=$AB_MT) ==="
 
-  recreate; log "seed $SEED duel g1 (PLN=side0)"
-  sim "fc-b$INST-s$SEED-dg1" "exec python3 -u /PeTTa/repos/OmegaClaw-Core/benchmarks/freeciv/duel_sim.py --game-id b${INST}d1_$SEED --seed $SEED --pln-side 0 --hours $HRS --max-turns $DUEL_MT --size 2 --out /PeTTa/repos/OmegaClaw-Core/$SD/duel/g1"
-  wait_gone "fc-b$INST-s$SEED-dg1"
+  case " $MODES " in *" duel "*)
+    recreate; log "seed $SEED duel g1 (PLN=side0)"
+    sim "fc-b$INST-s$SEED-dg1" "exec python3 -u /PeTTa/repos/OmegaClaw-Core/benchmarks/freeciv/duel_sim.py --game-id b${INST}d1_$SEED --seed $SEED --pln-side 0 --hours $HRS --max-turns $DUEL_MT --size 2 --out /PeTTa/repos/OmegaClaw-Core/$SD/duel/g1"
+    wait_gone "fc-b$INST-s$SEED-dg1"
 
-  recreate; log "seed $SEED duel g2 (PLN=side1)"
-  sim "fc-b$INST-s$SEED-dg2" "exec python3 -u /PeTTa/repos/OmegaClaw-Core/benchmarks/freeciv/duel_sim.py --game-id b${INST}d2_$SEED --seed $SEED --pln-side 1 --hours $HRS --max-turns $DUEL_MT --size 2 --out /PeTTa/repos/OmegaClaw-Core/$SD/duel/g2"
-  wait_gone "fc-b$INST-s$SEED-dg2"
-  report duel_report.py "$SD/duel"; log "seed $SEED duel report done"
+    recreate; log "seed $SEED duel g2 (PLN=side1)"
+    sim "fc-b$INST-s$SEED-dg2" "exec python3 -u /PeTTa/repos/OmegaClaw-Core/benchmarks/freeciv/duel_sim.py --game-id b${INST}d2_$SEED --seed $SEED --pln-side 1 --hours $HRS --max-turns $DUEL_MT --size 2 --out /PeTTa/repos/OmegaClaw-Core/$SD/duel/g2"
+    wait_gone "fc-b$INST-s$SEED-dg2"
+    report duel_report.py "$SD/duel"; log "seed $SEED duel report done"
+  ;; esac
 
-  recreate; log "seed $SEED A/B pln arm"
-  sim "fc-b$INST-s$SEED-abp" "exec python3 -u /PeTTa/repos/OmegaClaw-Core/benchmarks/freeciv/ab_sim.py --arm pln --game-id b${INST}ap_$SEED --seed $SEED --hours $HRS --max-turns $AB_MT --out /PeTTa/repos/OmegaClaw-Core/$SD/ab"
-  wait_gone "fc-b$INST-s$SEED-abp"
-
-  recreate; log "seed $SEED A/B plain arm"
-  sim "fc-b$INST-s$SEED-abq" "exec python3 -u /PeTTa/repos/OmegaClaw-Core/benchmarks/freeciv/ab_sim.py --arm plain --game-id b${INST}aq_$SEED --seed $SEED --hours $HRS --max-turns $AB_MT --out /PeTTa/repos/OmegaClaw-Core/$SD/ab"
-  wait_gone "fc-b$INST-s$SEED-abq"
-  report ab_report.py "$SD/ab"; log "seed $SEED ab report done"
+  case " $MODES " in *" ab "*)
+    # A/B experiment over $AB_ARMS (default: plain / facts-only / facts+chaining; the primary
+    # contrast is facts+chaining vs facts-only — the marginal value of chaining). Set AB_ARMS to
+    # "facts+chaining facts+chaining-v2" to compare the v1 rules against the atomspace-v2 arm.
+    ai=0
+    for ARM in $AB_ARMS; do
+      ai=$((ai + 1))
+      recreate; log "seed $SEED A/B arm '$ARM'"
+      sim "fc-b$INST-s$SEED-ab$ai" "exec python3 -u /PeTTa/repos/OmegaClaw-Core/benchmarks/freeciv/ab_sim.py --arm '$ARM' --game-id b${INST}a${ai}_$SEED --seed $SEED --hours $HRS --max-turns $AB_MT --out /PeTTa/repos/OmegaClaw-Core/$SD/ab"
+      wait_gone "fc-b$INST-s$SEED-ab$ai"
+    done
+    report ab_report.py "$SD/ab"; log "seed $SEED ab report done"
+  ;; esac
 
   log "=== seed $SEED DONE ==="
 done

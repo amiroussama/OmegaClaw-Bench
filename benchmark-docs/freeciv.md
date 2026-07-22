@@ -31,12 +31,12 @@ question: **does OmegaClaw's PLN/MeTTa reasoning make an LLM play better than th
 
 ### Issue #6 — deterministic state→atoms adapter + action validation
 Turns raw `llm_optimized` game states into deterministic PLN atoms and gates every candidate action
-through `validate_action` before it reaches the server. KPI benchmark over 6 schema-grounded fixture
+through `validate_action` before it reaches the server. KPI benchmark over 7 schema-grounded fixture
 states (`python3 benchmarks/freeciv/benchmark.py`):
 
 | Metric | baseline (raw text, no gate) | candidate (atoms + gate) |
 | --- | --- | --- |
-| States converted to atoms | 0/6 | **6/6** |
+| States converted to atoms | 0/7 | **7/7** |
 | Mean field coverage | 0.00 | **1.00** |
 | **Invalid-action submission rate** | **1.00** | **0.00** |
 | Legal-action acceptance | n/a | 1.00 |
@@ -47,8 +47,9 @@ while accepting all legal ones. Detail: [`benchmarks/freeciv/docs/issue-6-freeci
 
 > **Runtime-shape caveat (found live):** the real `civcom.build_llm_optimized_state` differs from the
 > documented `state_extractor` — `strategic.score`/`economic.gold`/`research` rather than
-> `victory_progress.current_score`/`economic.resources.*`. `player.score` reads **-1** and
-> score/gold/science log as **0** live. `cities/units/techs/turns` parse correctly, so all experiment
+> `victory_progress.current_score`/`economic.resources.*`. `gold`/`score` extraction was since
+> fixed (Issue #5 — see §5), so `Gold`/`Score` now read live (gold=50 in the turn-1 snapshot);
+> `science` still logs as **0**. `cities/units/techs/turns` parse correctly, so all experiment
 > verdicts rest on those. See [`benchmarks/freeciv/samples/README.md`].
 
 ### Issue #25 — turn-cycle / `end_turn` handshake
@@ -144,8 +145,11 @@ same space:
 Pairing a fact sentence with a rule via `(|~ fact rule)` fires lib_pln's Modus Ponens: the rule's
 variable unifies with the fact's entity, deriving a grounded **recommendation** atom, e.g.
 `((Inheritance City_1 Undefended) (stv 1.0 0.99))` + the Undefended rule →
-`((Recommend City_1 Defend) (stv 0.9 0.71))`. (A fourth `Threatens ⇒ Retreat` `Evaluation`-form
-rule is kept but does **not** fire under current lib_pln clauses.) `reason.derive` filters out
+`((Recommend City_1 Defend) (stv 0.9 0.71))`. (Beyond these direct one-hop rules, `rules.metta`
+adds multi-hop chain rules — intermediate `State`/`Priority` predicates that compose into
+recommendations in-container via the fixpoint — plus a `Threatens ⇒ Retreat` `Evaluation`-form
+rule that is kept but does **not** fire under current lib_pln clauses; 11 rules in total.)
+`reason.derive` filters out
 ungrounded templates (`(Recommend $c Defend)`) that leak from non-matching fact/rule pairs, so only
 concrete, grounded recommendations reach the LLM.
 
@@ -162,7 +166,7 @@ raises before anything malformed is loaded into a space.
 (Inheritance Unit_112 Type_workers)
 (Inheritance Tech_AdvancedFlight Researched)
 (Evaluation (Predicate At)      (List Unit_102 14 42))      ; its position
-(Evaluation (Predicate Gold)    (List Player_0 0))          ; gold=0 (proxy-unavailable, see §1 caveat)
+(Evaluation (Predicate Gold)    (List Player_0 50))         ; gold=50 (extraction fixed, Issue #5)
 (Evaluation (Predicate Science) (List Player_0 0))
 (Evaluation (Predicate Score)   (List Player_0 0))
 ; each fact above is also emitted as a sentence, e.g.
@@ -381,7 +385,10 @@ For a step-by-step operator's guide (run a duel end-to-end, then visualize it), 
 1. **Fix B — expansion vocabulary** in `rules.metta` (needs an adapter fact): see whether PLN can
    *widen* the lead now that anchoring is gone. Plan: `benchmarks/freeciv/docs/anchoring-fix-plan.md`.
 2. **Multiple seeded pairs** (e.g. 10 seeds) to turn the direction-consistent signal into statistics.
-3. **Fix `score/gold/science` extraction** against the real runtime `llm_optimized` shape.
+3. **~~Fix `score/gold/science` extraction~~ (done for gold/score, Issue #5)** — `metrics.py` and
+   `adapter.py` now read `gold`/`score` from the per-player block (`players[pid]`) first, so
+   `Gold`/`Score` are no longer a false 0. `science` remains proxy-limited (no per-player field in
+   the runtime shape) — documented in `benchmarks/freeciv/docs/benchmark-protocols.md` §2.
 4. **Deeper, decision-changing PLN rules** (multi-condition, threat-response, tech-path planning).
 5. **Stability:** the mid-game server reset (turn→1) and the desktop-sleep interruptions warrant a
    more robust host / a proxy-side fix for unattended long runs.

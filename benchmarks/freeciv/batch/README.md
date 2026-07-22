@@ -29,7 +29,8 @@ Requires `.env` with `SNET_API_KEY`, the `omegaclaw:local` image, and the freeci
 ab_runs/batch_<ts>/
   manifest.json
   seed<n>/duel/g1/duel.jsonl, duel/g2/duel.jsonl, duel/duel_comparison.{md,json}
-  seed<n>/ab/{pln,plain}.jsonl, ab/comparison.{md,json}
+  seed<n>/ab/{facts+chaining,facts-only,plain}.jsonl, ab/comparison.{md,json}
+  # (AB_ARMS is configurable; e.g. "facts+chaining facts+chaining-v2" adds the v2 atomspace arm.)
 ```
 `duel.jsonl`/`*.jsonl` are gitignored (large); the per-seed `comparison.*` and the batch
 `aggregate.*` are the tracked records.
@@ -41,8 +42,11 @@ docker logs -f fc-worker-1-<ts>              # a worker's progress
 python3 benchmarks/freeciv/batch/aggregate.py ab_runs/batch_<ts>
 ```
 `aggregate.py` scans every completed game, decides the territory winner (cities > units > techs), and
-reports per experiment: N, PLN/plain/tie win counts, an exact two-sided **sign-test** p, and per-metric
-mean Δ (pln−plain) with a paired **t-stat** + normal-approx p. Writes `aggregate.{md,json}`.
+reports per experiment/contrast: N, per-arm/tie win counts, an exact two-sided **sign-test** p, and
+per-metric mean Δ between the two arms with a paired **t-stat** + normal-approx p. The A/B primary
+contrast is `facts+chaining` vs `facts-only` (the marginal value of chaining); when the v2 arm is
+present it also reports `facts+chaining-v2` vs `facts+chaining`. Writes `aggregate.{md,json}` — but
+refuses to overwrite them with an empty report when no raw per-seed JSONL is found.
 
 ## Stop / resume
 ```bash

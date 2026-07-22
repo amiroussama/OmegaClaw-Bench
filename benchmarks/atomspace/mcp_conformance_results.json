@@ -1,0 +1,428 @@
+{
+  "runtime_backend": "hyperon",
+  "cases_total": 52,
+  "cases_passed": 52,
+  "conformance": [
+    {
+      "name": "assert-added",
+      "tool": "atom_assert",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "assert-dup",
+      "tool": "atom_assert",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "assert-conflict-revised",
+      "tool": "atom_assert",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "assert-explicit-stv",
+      "tool": "atom_assert",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "assert-chain-1",
+      "tool": "atom_assert",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "assert-chain-2",
+      "tool": "atom_assert",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "assert-global-scope",
+      "tool": "atom_assert",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "assert-p4-edge",
+      "tool": "atom_assert",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "assert-p4-tree",
+      "tool": "atom_assert",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "assert-inject-pycall",
+      "tool": "atom_assert",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "assert-inject-import",
+      "tool": "atom_assert",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "assert-inject-equation",
+      "tool": "atom_assert",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "assert-inject-superpose",
+      "tool": "atom_assert",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "assert-inject-bind",
+      "tool": "atom_assert",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "assert-inject-exec-bang",
+      "tool": "atom_assert",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "assert-inject-smuggle-trailing",
+      "tool": "atom_assert",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "assert-inject-bad-head",
+      "tool": "atom_assert",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "assert-inject-var-in-stored",
+      "tool": "atom_assert",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "assert-inject-bad-arity",
+      "tool": "atom_assert",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "assert-empty-atom",
+      "tool": "atom_assert",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "assert-bad-stv-range",
+      "tool": "atom_assert",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "assert-bad-stv-type",
+      "tool": "atom_assert",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "assert-bad-source-type",
+      "tool": "atom_assert",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "batch-mixed",
+      "tool": "atom_assert_batch",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "batch-empty-list",
+      "tool": "atom_assert_batch",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "query-vars-bindings",
+      "tool": "atom_query",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "query-ground-exact",
+      "tool": "atom_query",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "query-no-match",
+      "tool": "atom_query",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "query-global-union",
+      "tool": "atom_query",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "query-malformed-pattern",
+      "tool": "atom_query",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "query-unknown-scope-format",
+      "tool": "atom_query",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "revise-existing",
+      "tool": "revise",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "revise-new-atom",
+      "tool": "revise",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "retract-existing",
+      "tool": "atom_retract",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "retract-missing",
+      "tool": "atom_retract",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "retract-invalid-atom",
+      "tool": "atom_retract",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "query-superseded-visible",
+      "tool": "atom_query",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "query-superseded-excluded",
+      "tool": "atom_query",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "scope-info-project",
+      "tool": "scope_info",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "scope-info-global",
+      "tool": "scope_info",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "hybrid-recall-hit",
+      "tool": "hybrid_recall",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "hybrid-recall-empty-scope",
+      "tool": "hybrid_recall",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "infer-two-hop",
+      "tool": "infer",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "infer-empty-scope",
+      "tool": "infer",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "infer-malformed-query",
+      "tool": "infer",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "bootstrap-tmp-repo",
+      "tool": "bootstrap_project",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "bootstrap-no-repo",
+      "tool": "bootstrap_project",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "export-metta-path",
+      "tool": "snapshot_export",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "export-jsonl-content",
+      "tool": "snapshot_export",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "import-roundtrip",
+      "tool": "snapshot_import",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "import-missing-file",
+      "tool": "snapshot_import",
+      "pass": true,
+      "failures": []
+    },
+    {
+      "name": "import-hostile-seed",
+      "tool": "snapshot_import",
+      "pass": true,
+      "failures": []
+    }
+  ],
+  "crashes": [],
+  "latency_ms": {
+    "atom_assert": {
+      "n": 115,
+      "p50_ms": 0.01,
+      "p95_ms": 0.3,
+      "mean_ms": 0.1
+    },
+    "atom_assert_batch": {
+      "n": 10,
+      "p50_ms": 0.0,
+      "p95_ms": 0.45,
+      "mean_ms": 0.19
+    },
+    "atom_query": {
+      "n": 40,
+      "p50_ms": 0.21,
+      "p95_ms": 0.36,
+      "mean_ms": 0.18
+    },
+    "atom_retract": {
+      "n": 15,
+      "p50_ms": 0.14,
+      "p95_ms": 0.17,
+      "mean_ms": 0.14
+    },
+    "hybrid_recall": {
+      "n": 10,
+      "p50_ms": 0.41,
+      "p95_ms": 3.14,
+      "mean_ms": 1.52
+    },
+    "revise": {
+      "n": 10,
+      "p50_ms": 0.2,
+      "p95_ms": 0.33,
+      "mean_ms": 0.22
+    },
+    "scope_info": {
+      "n": 10,
+      "p50_ms": 0.17,
+      "p95_ms": 0.24,
+      "mean_ms": 0.18
+    },
+    "snapshot_export": {
+      "n": 10,
+      "p50_ms": 0.46,
+      "p95_ms": 0.62,
+      "mean_ms": 0.47
+    },
+    "snapshot_import": {
+      "n": 15,
+      "p50_ms": 0.39,
+      "p95_ms": 0.68,
+      "mean_ms": 0.35
+    }
+  },
+  "interleaving": {
+    "clients": 2,
+    "asserts_per_client": 100,
+    "unique_canonicals": 150,
+    "trials": [
+      {
+        "scope": "feedfeed0000",
+        "final_count": 150,
+        "ok_calls": 200,
+        "exceptions": [],
+        "lossless": true
+      },
+      {
+        "scope": "feedfeed0001",
+        "final_count": 150,
+        "ok_calls": 200,
+        "exceptions": [],
+        "lossless": true
+      },
+      {
+        "scope": "feedfeed0002",
+        "final_count": 150,
+        "ok_calls": 200,
+        "exceptions": [],
+        "lossless": true
+      }
+    ],
+    "lossless_trials": 3,
+    "lossless": true
+  },
+  "stdio_transport": {
+    "status": "ok",
+    "tools_listed": 11,
+    "tool_names": [
+      "atom_assert",
+      "atom_assert_batch",
+      "atom_query",
+      "atom_retract",
+      "bootstrap_project",
+      "hybrid_recall",
+      "infer",
+      "revise",
+      "scope_info",
+      "snapshot_export",
+      "snapshot_import"
+    ],
+    "call_is_error": false
+  },
+  "gate": {
+    "passed": true,
+    "failures": []
+  }
+}

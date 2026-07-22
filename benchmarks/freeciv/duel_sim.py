@@ -39,10 +39,14 @@ _BENCH = os.path.dirname(_HERE)
 if _BENCH not in sys.path:
     sys.path.insert(0, _BENCH)
 
-from freeciv import adapter, atoms, actions, client, turncycle, metrics, llm_agent, reason  # noqa: E402
+from freeciv import (adapter, atoms, actions, client, turncycle, metrics, llm_agent, reason,  # noqa: E402
+                     atomspace_export)
 
 WS = os.environ.get("FREECIV_PROXY_WS", "ws://localhost:8002/llmsocket/8002")
 TOKEN = os.environ.get("FREECIV_API_TOKEN", "test-token-fc3d-001")
+# Per-run AtomSpace snapshot artifact (Issue #2); default on, disable with FREECIV_ATOMSPACE_SNAPSHOT=0.
+_SNAPSHOT = (os.environ.get("FREECIV_ATOMSPACE_SNAPSHOT", "1").strip().lower()
+             not in {"0", "false", "no", "off"})
 
 
 # A derived recommendation atom, e.g. "(Recommend City_1 Defend)".
@@ -62,12 +66,19 @@ def _parse_recs(recs):
     return out, ents
 
 
-def _move_record(act, valid, rec_ents):
+def _move_record(act, validation, rec_ents, trace_id=None):
     """One per-unit move record from a NORMALIZED action (actions.normalize_action output).
 
-    ``pln_recommended`` marks that PLN derived a recommendation for this action's actor entity
-    that turn (best-effort entity match; empty set => always False for the plain side).
+    ``validation`` may be an ``actions.ValidationResult`` (preferred — carries the rejection
+    reason) or a bare bool (back-compat). Invalid moves retain ``error_code``/``error_message``
+    so the dashboard can show *why* an action was rejected (Issue #3/#4). ``pln_recommended``
+    marks that PLN derived a recommendation for this action's actor entity that turn (best-effort
+    entity match; empty set => always False for the plain side). ``trace_id`` links the move to
+    the PLN derivation trace recorded at decision time (None for non-PLN sides/arms).
     """
+    valid = getattr(validation, "is_valid", validation)
+    error_code = getattr(validation, "error_code", None)
+    error_message = getattr(validation, "error_message", None)
     kind = next((k for k in ("unit_id", "city_id", "tech_id") if act.get(k) is not None), None)
     actor = act.get(kind) if kind else None
     if act.get("dest_x") is not None:
@@ -79,7 +90,10 @@ def _move_record(act, valid, rec_ents):
     tok = _ACTOR_TOKEN.get(kind)
     recommended = bool(tok and actor is not None and ("%s_%s" % (tok, actor)) in rec_ents)
     return {"actor": actor, "actor_kind": kind, "action_type": act.get("type"),
-            "target": target, "valid": bool(valid), "pln_recommended": recommended}
+            "target": target, "valid": bool(valid),
+            "error_code": (None if valid else error_code),
+            "error_message": (None if valid else error_message),
+            "pln_recommended": recommended, "trace_id": trace_id}
 
 
 def _log(out_dir, record):
@@ -102,13 +116,18 @@ async def _connect(ws_mod, agent_id, game_id):
     return ws, (auth.get("player_id") if auth else None)
 
 
-async def _play_side(ws, is_pln):
+async def _play_side(ws, is_pln, out_dir=None, turn=None):
     """One side's turn: observe -> (pln: derive) -> decide -> validate+submit -> end phase.
-    Returns a per-side metrics record (does NOT wait for the turn to advance)."""
+    Returns a per-side metrics record (does NOT wait for the turn to advance).
+
+    On the PLN side the derivation is recorded proactively (Issue #3): ``reason.derive_traced``
+    produces a PlnTrace at decision time, saved under ``<out_dir>/traces/`` and linked from the
+    side record (``pln_trace_id``) and every move record (``trace_id``)."""
     st = await turncycle.get_state(ws)
     if not st:
         return {"alive": False, "metrics": None, "proposed": 0, "submitted": 0, "blocked": 0,
-                "reason_ms": None, "n_conclusions": 0, "llm_ms": None, "error": "no_state"}
+                "reason_ms": None, "n_conclusions": 0, "llm_ms": None, "error": "no_state",
+                "pln_trace_id": None}
     norm = adapter.normalize_state(st)
     m = metrics.metrics_from_state(norm)
     mine = [u for u in norm["units"] if u.get("owner") == norm["player_perspective"]]
@@ -116,11 +135,28 @@ async def _play_side(ws, is_pln):
     reason_ms, n_conc = None, 0
     ctx = plain
     recommendations, rec_ents = [], set()
+    trace_id = None
     if is_pln:
         facts = atoms.sentences_from_facts(adapter.facts_from_state(norm))
-        t0 = time.time(); recs = reason.derive(facts); reason_ms = int((time.time() - t0) * 1000)
+        t0 = time.time()
+        recs, trace = reason.derive_traced(
+            facts, context={"side_role": "pln", "turn": turn,
+                            "state_hash": adapter.state_hash(st)})
+        reason_ms = int((time.time() - t0) * 1000)
         n_conc = len(recs)
         recommendations, rec_ents = _parse_recs(recs)
+        if trace is not None:
+            trace_id = trace.trace_id
+            if out_dir:
+                try:
+                    trace.save(os.path.join(out_dir, "traces"))
+                except Exception:  # noqa: BLE001 - tracing is best-effort; never break the arm
+                    pass
+        if out_dir and _SNAPSHOT:  # per-run AtomSpace snapshot artifact (Issue #2)
+            try:
+                atomspace_export.write_run_snapshot(out_dir, st, recs, turn)
+            except Exception:  # noqa: BLE001 - snapshot is best-effort
+                pass
         block = reason.format_for_llm(recs)
         ctx = plain + ("\n\n" + block if block else "")
     acts, meta = llm_agent.decide(ctx, mine)
@@ -129,20 +165,20 @@ async def _play_side(ws, is_pln):
     for a in acts:
         proposed += 1
         na = actions.normalize_action(a)
-        valid = actions.validate_action(a, st).is_valid
-        if valid:
+        v = actions.validate_action(a, st)
+        if v.is_valid:
             await ws.send(json.dumps(client.action_message(na)))
             submitted += 1
         else:
             blocked += 1
-        moves.append(_move_record(na, valid, rec_ents))
+        moves.append(_move_record(na, v, rec_ents, trace_id=trace_id))
     await turncycle.send_end_turn(ws)
     # a side is "alive" while it still has a city or a unit
     alive = (m["n_cities"] or 0) > 0 or (m["n_units"] or 0) > 0
     return {"alive": alive, "metrics": m, "proposed": proposed, "submitted": submitted,
             "blocked": blocked, "reason_ms": reason_ms, "n_conclusions": n_conc,
             "llm_ms": meta.get("llm_ms"), "error": meta.get("error"),
-            "moves": moves, "recommendations": recommendations}
+            "moves": moves, "recommendations": recommendations, "pln_trace_id": trace_id}
 
 
 def _winner(sideinfo):
@@ -252,7 +288,8 @@ async def run(game_id, seed, pln_side, hours, max_turns, out_dir, size):
             # each side acts; a drop reconnects ONLY that side (best-effort end its phase after)
             for idx in (0, 1):
                 try:
-                    last[str(idx)] = await _play_side(conns[idx], is_pln[idx])
+                    last[str(idx)] = await _play_side(conns[idx], is_pln[idx],
+                                                      out_dir=out_dir, turn=cur)
                 except (websockets.ConnectionClosed, OSError):
                     try:
                         await reconnect_one(idx)
@@ -273,11 +310,11 @@ async def run(game_id, seed, pln_side, hours, max_turns, out_dir, size):
                    "side0": {"arm": roles["0"], **{k: last["0"].get(k) for k in
                              ("metrics", "proposed", "submitted", "blocked", "reason_ms",
                               "n_conclusions", "llm_ms", "alive", "error", "moves",
-                              "recommendations")}},
+                              "recommendations", "pln_trace_id")}},
                    "side1": {"arm": roles["1"], **{k: last["1"].get(k) for k in
                              ("metrics", "proposed", "submitted", "blocked", "reason_ms",
                               "n_conclusions", "llm_ms", "alive", "error", "moves",
-                              "recommendations")}}}
+                              "recommendations", "pln_trace_id")}}}
             _log(out_dir, rec)
             _heartbeat(out_dir, turn=(nt if nt is not None else cur), turns_played=turns_played,
                        pln_side=pln_side, reconnects=reconnects)

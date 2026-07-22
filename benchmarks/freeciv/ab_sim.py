@@ -37,10 +37,41 @@ _BENCH = os.path.dirname(_HERE)
 if _BENCH not in sys.path:
     sys.path.insert(0, _BENCH)
 
-from freeciv import adapter, atoms, actions, client, turncycle, metrics, llm_agent, reason, duel_sim  # noqa: E402
+from freeciv import (adapter, atoms, actions, client, turncycle, metrics, llm_agent, reason,  # noqa: E402
+                     duel_sim, fact_proposer, ground, atomspace_export, reason_v2)
+
+# Per-run AtomSpace snapshot artifact (Issue #2); default on, disable with FREECIV_ATOMSPACE_SNAPSHOT=0.
+_SNAPSHOT = (os.environ.get("FREECIV_ATOMSPACE_SNAPSHOT", "1").strip().lower()
+             not in {"0", "false", "no", "off"})
 
 WS = os.environ.get("FREECIV_PROXY_WS", "ws://localhost:8002/llmsocket/8002")
 TOKEN = os.environ.get("FREECIV_API_TOKEN", "test-token-fc3d-001")
+
+# Arm vocabulary. ``pln`` is a backwards-compatible alias for ``facts+chaining`` (older batch
+# dirs / callers). ``plain`` is the untouched control. ``facts+chaining-v2`` reasons with the
+# colleague's atomspace-v2 (rulebook + world overlay + player, via reason_v2) instead of v1's
+# rules.metta — same facts-block + grounded-recs plumbing, different knowledge base + engine.
+ARMS = ("plain", "facts-only", "facts+chaining", "facts+chaining-v2")
+
+
+def _is_fact_arm(arm):
+    return arm in ("facts-only", "facts+chaining", "facts+chaining-v2", "pln")
+
+
+def _uses_chaining(arm):
+    return arm in ("facts+chaining", "facts+chaining-v2", "pln")
+
+
+def _is_v2(arm):
+    return arm == "facts+chaining-v2"
+
+
+def _agent_id(arm):
+    """Proxy-safe agent id for an arm. The proxy enforces ``^[a-zA-Z0-9_-]+$`` on agent_id, so the
+    ``+`` in ``facts+chaining`` must be sanitized (else llm_connect is rejected with E223 and no
+    game ever binds)."""
+    import re
+    return "omega-" + re.sub(r"[^a-zA-Z0-9_-]", "-", arm)
 
 
 def _log(out_dir, arm, record):
@@ -59,7 +90,7 @@ def _heartbeat(out_dir, arm, **kv):
 
 async def _connect(ws_mod, arm):
     ws = await ws_mod.connect(WS, open_timeout=30, max_size=None, ping_interval=None)
-    await ws.send(json.dumps({"type": "llm_connect", "agent_id": "omega-%s" % arm, "api_token": TOKEN,
+    await ws.send(json.dumps({"type": "llm_connect", "agent_id": _agent_id(arm), "api_token": TOKEN,
                               "game_id": os.environ["FREECIV_GAME_ID"], "nation": "Romans",
                               "leader_name": "Caesar"}))
     await turncycle.recv_until(ws, {"auth_success"}, timeout=40)
@@ -83,21 +114,61 @@ async def _pregame(ws, seed):
     return st
 
 
-def _context(arm, norm):
-    """Arm-specific state rendering + (pln) reasoning. Returns (context_text, reason_ms, recs).
+def _context(arm, norm, raw=None):
+    """Arm-specific state rendering + (chaining) reasoning. Returns ``(context_text, extra)``.
 
-    ``recs`` is the raw derived-recommendation list (empty for the plain arm) — the caller uses it
-    both for the conclusion count and to flag which per-unit moves PLN recommended.
+    ``extra`` carries the per-turn reasoning/fact telemetry for the metrics log:
+    ``recs`` (derived recommendations), ``n_conclusions``, ``reason_ms``, ``n_llm_facts``,
+    ``fact_llm_ms``. The arms:
+      * ``plain``            — plain state only (control), no facts, no reasoning.
+      * ``facts-only``       — plain + adapter∪LLM facts rendered as premises; NO PLN.
+      * ``facts+chaining``   — same facts + v1 PLN-derived recommendations (rules.metta).
+      * ``facts+chaining-v2``— v2 atomspace: world overlay from raw state + rulebook + player,
+                               chained by reason_v2 (isolates the KB+engine swap).
+    All fact arms make the SAME extra fact-proposal call (arm parity). ``raw`` (the pre-normalize
+    llm_optimized state) is required by the v2 arm's overlay generator.
     """
     plain = llm_agent.render_plain(norm)
-    if arm != "pln":
-        return plain, None, []
-    facts = atoms.sentences_from_facts(adapter.facts_from_state(norm))
-    t0 = time.time()
-    recs = reason.derive(facts)
-    reason_ms = int((time.time() - t0) * 1000)
-    block = reason.format_for_llm(recs)
-    return (plain + ("\n\n" + block if block else "")), reason_ms, recs
+    extra = {"reason_ms": None, "recs": [], "n_conclusions": 0, "hops": 0,
+             "n_grounded": 0, "n_llm_facts": 0, "fact_llm_ms": None,
+             "trace": None, "trace_id": None}
+    if not _is_fact_arm(arm):
+        return plain, extra
+
+    # fact arms: deterministic adapter facts (c=0.99) ∪ validated LLM-proposed facts (c=0.55)
+    adapter_facts = adapter.facts_from_state(norm)
+    llm_facts, fmeta = fact_proposer.propose_facts(norm)
+    extra["n_llm_facts"] = fmeta.get("n_llm_facts", 0)
+    extra["fact_llm_ms"] = fmeta.get("fact_llm_ms")
+    facts = atoms.sentences_from_facts(adapter_facts + llm_facts)
+    facts_block = reason.format_facts_for_llm(facts)
+    ctx = plain + ("\n\n" + facts_block if facts_block else "")
+    if not _uses_chaining(arm):
+        return ctx, extra
+
+    # --- v2 arm: reason over the colleague's atomspace (rulebook + world(raw) + player) --------
+    if _is_v2(arm):
+        t0 = time.time()
+        recs, v2meta = reason_v2.derive(raw or {})   # meta carries the real hop depth
+        extra["reason_ms"] = int((time.time() - t0) * 1000)
+        trace = None                                 # v2 chainer keeps its own provenance
+        extra["hops"] = v2meta.get("hops", 0)
+    else:
+        # facts+chaining: v1 PLN multi-hop over the merged facts. derive_traced records a PlnTrace
+        # at decision time (Issue #3), later saved by run() and linked from the per-turn record.
+        t0 = time.time()
+        recs, trace = reason.derive_traced(facts, context={"arm": arm})
+        extra["reason_ms"] = int((time.time() - t0) * 1000)
+        extra["hops"] = len(trace.hops) if trace is not None else 0
+    extra["recs"] = recs
+    extra["n_conclusions"] = len(recs)
+    extra["trace"] = trace
+    extra["trace_id"] = trace.trace_id if trace is not None else None
+    grounded = [ground.ground(r, norm) for r in recs]   # concrete, legality-checked (None if no fit)
+    extra["n_grounded"] = sum(1 for g in grounded if g)  # already re-validated -> grounded == legal
+    block = reason.format_for_llm(recs, grounded=grounded)
+    ctx = ctx + ("\n\n" + block if block else "")
+    return ctx, extra
 
 
 async def run(arm, seed, hours, max_turns, out_dir):
@@ -125,8 +196,21 @@ async def run(arm, seed, hours, max_turns, out_dir):
                 st = await turncycle.get_state(ws) or st
                 norm = adapter.normalize_state(st)
                 cur = turncycle.turn_of(st)
-                ctx, reason_ms, recs = _context(arm, norm)
-                n_conc = len(recs)
+                ctx, extra = _context(arm, norm, raw=st)
+                recs = extra["recs"]
+                reason_ms = extra["reason_ms"]
+                n_conc = extra["n_conclusions"]
+                trace_id = extra.get("trace_id")
+                if extra.get("trace") is not None:
+                    try:
+                        extra["trace"].save(os.path.join(out_dir, "traces"))
+                    except Exception:  # noqa: BLE001 - tracing is best-effort; never break the arm
+                        pass
+                if _SNAPSHOT and _is_fact_arm(arm):
+                    try:
+                        atomspace_export.write_run_snapshot(out_dir, st, recs, cur)
+                    except Exception:  # noqa: BLE001 - snapshot is best-effort
+                        pass
                 recommendations, rec_ents = duel_sim._parse_recs(recs)
                 mine = [u for u in norm["units"] if u.get("owner") == norm["player_perspective"]]
                 acts, meta = llm_agent.decide(ctx, mine)
@@ -135,13 +219,13 @@ async def run(arm, seed, hours, max_turns, out_dir):
                 for a in acts:
                     proposed += 1
                     na = actions.normalize_action(a)
-                    valid = actions.validate_action(a, st).is_valid
-                    if valid:
+                    v = actions.validate_action(a, st)
+                    if v.is_valid:
                         await ws.send(json.dumps(client.action_message(na)))
                         submitted += 1
                     else:
                         blocked += 1
-                    moves.append(duel_sim._move_record(na, valid, rec_ents))
+                    moves.append(duel_sim._move_record(na, v, rec_ents, trace_id=trace_id))
                 await turncycle.send_end_turn(ws)
                 nt = await turncycle.await_turn_advance(ws, cur, timeout=45)
                 if meta.get("error"):
@@ -151,8 +235,11 @@ async def run(arm, seed, hours, max_turns, out_dir):
                        "proposed": proposed, "submitted": submitted, "blocked": blocked,
                        "illegal_rate": (blocked / proposed) if proposed else 0.0,
                        "llm_ms": meta.get("llm_ms"), "reason_ms": reason_ms, "n_conclusions": n_conc,
+                       "n_llm_facts": extra["n_llm_facts"], "fact_llm_ms": extra["fact_llm_ms"],
+                       "hops": extra["hops"], "n_grounded": extra["n_grounded"],
                        "prompt_chars": meta.get("prompt_chars"), "llm_error": meta.get("error"),
-                       "moves": moves, "recommendations": recommendations}
+                       "moves": moves, "recommendations": recommendations,
+                       "pln_trace_id": trace_id}
                 _log(out_dir, arm, rec)
                 if nt is not None:
                     totals["turns_advanced"] += 1; turns_seen.append(nt); stalls = 0
@@ -190,7 +277,8 @@ async def run(arm, seed, hours, max_turns, out_dir):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--arm", choices=["pln", "plain"], required=True)
+    ap.add_argument("--arm", choices=["plain", "facts-only", "facts+chaining", "facts+chaining-v2", "pln"],
+                    required=True)
     ap.add_argument("--game-id", required=True)
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--hours", type=float, default=10.0)

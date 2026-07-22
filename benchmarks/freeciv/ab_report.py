@@ -13,7 +13,29 @@ import os
 import sys
 import time
 
-ARMS = ("pln", "plain")
+import metrics
+
+ARMS = ("pln", "plain")                                      # legacy 2-arm fallback
+CANON_ARMS = ("plain", "facts-only", "facts+chaining", "pln")  # 3-arm + legacy chaining alias
+
+
+def _present_arms(out_dir):
+    """Ordered arms with a per-turn JSONL under ``out_dir`` (falls back to the legacy pair)."""
+    present = [a for a in CANON_ARMS if os.path.isfile(os.path.join(out_dir, "%s.jsonl" % a))]
+    if "facts+chaining" in present and "pln" in present:
+        present.remove("pln")  # both name the chaining arm; prefer the explicit one
+    return present or list(ARMS)
+
+
+def _contrast(arms):
+    """Primary (A, B) contrast: chaining vs facts-only (marginal value of chaining), else chaining
+    vs plain (legacy), else the first two present arms."""
+    chaining = "facts+chaining" if "facts+chaining" in arms else ("pln" if "pln" in arms else None)
+    if chaining and "facts-only" in arms:
+        return chaining, "facts-only"
+    if chaining and "plain" in arms:
+        return chaining, "plain"
+    return (arms[0], arms[-1]) if len(arms) >= 2 else (arms[0], arms[0])
 
 
 def _load(out_dir, arm):
@@ -61,6 +83,11 @@ def _arm_stats(out_dir, arm):
     blocked = sum(r.get("blocked", 0) for r in tr)
     submitted = sum(r.get("submitted", 0) for r in tr)
     advanced = sum(1 for r in tr if r.get("advanced_to") is not None)
+    # era progression + PLN action quality over the per-turn records
+    traj = [{"turn": r.get("advanced_to") or r.get("turn"), **r.get("metrics", {})} for r in tr]
+    era = metrics.era_progression(traj)
+    quality = metrics.pln_quality([{"moves": r.get("moves") or [],
+                                    "recommendations": r.get("recommendations") or []} for r in tr])
     return {
         "arm": arm,
         "turns_logged": len(tr),
@@ -70,31 +97,42 @@ def _arm_stats(out_dir, arm):
         "n_cities": lm.get("n_cities"), "n_units": lm.get("n_units"), "n_techs": lm.get("n_techs"),
         "proposed": proposed, "submitted": submitted, "blocked": blocked,
         "illegal_rate": round(blocked / proposed, 3) if proposed else 0.0,
+        "avg_actions_per_turn": round(proposed / len(tr), 2) if tr else None,
         "avg_llm_ms": _avg([r.get("llm_ms") for r in tr]),
         "avg_reason_ms": _avg([r.get("reason_ms") for r in tr]),
         "avg_conclusions": _avg([r.get("n_conclusions") for r in tr]),
+        "avg_hops": _avg([r.get("hops") for r in tr]),
+        "avg_grounded": _avg([r.get("n_grounded") for r in tr]),
+        "n_llm_facts": _avg([r.get("n_llm_facts") for r in tr]),
         "llm_errors": sum(1 for r in tr if r.get("llm_error")),
         "reconnects": sum(1 for r in rows if r.get("event") == "reconnect"),
         "heartbeat_age_s": _heartbeat_age(out_dir, arm),
         "peak_score": max([m for m in (r.get("metrics", {}).get("score") for r in tr)
                            if isinstance(m, (int, float))] or [None]) if tr else None,
+        "era": era,
+        "turns_to_tech_4": era["turns_to_tech_count"].get("4"),
+        "pln_action_success_rate": quality["pln_action_success_rate"],
+        "rec_adoption_rate": quality["rec_adoption_rate"],
     }
 
 
 def snapshot(out_dir):
-    s = {a: _arm_stats(out_dir, a) for a in ARMS}
+    arms = _present_arms(out_dir)
+    s = {a: _arm_stats(out_dir, a) for a in arms}
     lines = ["A/B progress — %s (UTC)" % time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()),
-             "run dir: %s" % out_dir, ""]
+             "run dir: %s" % out_dir, "arms: %s" % ", ".join(arms), ""]
     fields = [("last_turn", "turn"), ("turns_advanced", "advanced"), ("score", "score"),
               ("n_cities", "cities"), ("n_units", "units"), ("n_techs", "techs"),
               ("gold", "gold"), ("science", "sci"), ("illegal_rate", "illegal%"),
               ("avg_llm_ms", "llm_ms"), ("avg_reason_ms", "reason_ms"), ("avg_conclusions", "concl"),
-              ("llm_errors", "llm_err"), ("reconnects", "reconn"), ("heartbeat_age_s", "hb_age_s")]
-    hdr = "  %-14s %12s %12s" % ("metric", "pln", "plain")
-    lines.append(hdr); lines.append("  " + "-" * 40)
+              ("n_llm_facts", "llm_facts"), ("llm_errors", "llm_err"), ("reconnects", "reconn"),
+              ("heartbeat_age_s", "hb_age_s")]
+    cw = 15
+    hdr = "  %-14s" % "metric" + "".join("%*s" % (cw, a) for a in arms)
+    lines.append(hdr); lines.append("  " + "-" * (14 + cw * len(arms)))
     for key, label in fields:
-        lines.append("  %-14s %12s %12s" % (label, s["pln"].get(key), s["plain"].get(key)))
-    for a in ARMS:
+        lines.append("  %-14s" % label + "".join("%*s" % (cw, s[a].get(key)) for a in arms))
+    for a in arms:
         age = s[a]["heartbeat_age_s"]
         if age is None or age > 600:
             lines.append("  [warn] arm '%s' heartbeat stale (age=%ss) — may be stalled/down" % (a, age))
@@ -107,11 +145,12 @@ def _trajectory(out_dir, arm):
 
 
 def final(out_dir):
-    s = {a: _arm_stats(out_dir, a) for a in ARMS}
+    arms = _present_arms(out_dir)
+    s = {a: _arm_stats(out_dir, a) for a in arms}
     # Fail closed: without raw per-turn logs (gitignored) the stats are empty, and writing would
     # overwrite a tracked comparison with an empty tie (PR #44 review). Reprint the committed
     # comparison if present, else refuse — never clobber.
-    if not any(s[a]["turns_logged"] for a in ARMS):
+    if not any(s[a]["turns_logged"] for a in arms):
         prior = os.path.join(out_dir, "comparison.md")
         if os.path.isfile(prior):
             sys.stderr.write("ab_report: raw logs absent — reprinting committed comparison.md "
@@ -120,50 +159,62 @@ def final(out_dir):
         sys.stderr.write("ab_report: no raw *.jsonl and no committed comparison.md under %s — "
                          "refusing to write an empty comparison. Run against the run data.\n" % out_dir)
         return None
-    traj = {a: _trajectory(out_dir, a) for a in ARMS}
+    traj = {a: _trajectory(out_dir, a) for a in arms}
+    a_name, b_name = _contrast(arms)   # primary contrast (marginal value of chaining)
 
     def better(key, hi=True):
-        pv, qv = s["pln"].get(key), s["plain"].get(key)
+        pv, qv = s[a_name].get(key), s[b_name].get(key)
         if not isinstance(pv, (int, float)) or not isinstance(qv, (int, float)) or pv == qv:
             return "tie"
         if hi:
-            return "pln" if pv > qv else "plain"
-        return "pln" if pv < qv else "plain"
+            return a_name if pv > qv else b_name
+        return a_name if pv < qv else b_name
 
     verdict = {"final_score": better("score"), "peak_score": better("peak_score"),
                "cities": better("n_cities"), "techs": better("n_techs"),
                "turns_advanced": better("turns_advanced"),
-               "illegal_rate": better("illegal_rate", hi=False)}
-    wins = {"pln": 0, "plain": 0}
+               "illegal_rate": better("illegal_rate", hi=False),
+               "turns_to_tech_4": better("turns_to_tech_4", hi=False)}
+    wins = {a_name: 0, b_name: 0}
     for v in verdict.values():
         if v in wins:
             wins[v] += 1
-    overall = "pln" if wins["pln"] > wins["plain"] else ("plain" if wins["plain"] > wins["pln"] else "tie")
+    overall = a_name if wins[a_name] > wins[b_name] else (b_name if wins[b_name] > wins[a_name] else "tie")
 
-    result = {"stats": s, "verdict": verdict, "verdict_wins": wins, "overall": overall,
-              "trajectory": traj, "generated": time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())}
+    result = {"arms": arms, "contrast": [a_name, b_name], "stats": s, "verdict": verdict,
+              "verdict_wins": wins, "overall": overall, "trajectory": traj,
+              "generated": time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())}
     with open(os.path.join(out_dir, "comparison.json"), "w", encoding="utf-8") as f:
         json.dump(result, f, indent=2)
 
     rows = [("Final score", "score"), ("Peak score", "peak_score"), ("Cities", "n_cities"),
             ("Units", "n_units"), ("Techs", "n_techs"), ("Last turn", "last_turn"),
-            ("Turns advanced", "turns_advanced"), ("Illegal-action rate", "illegal_rate"),
-            ("Avg LLM ms", "avg_llm_ms"), ("Avg reason ms", "avg_reason_ms"),
-            ("Avg PLN conclusions/turn", "avg_conclusions"), ("LLM errors", "llm_errors")]
-    md = ["# FreeCiv A/B — PLN (OmegaClaw) vs plain-LLM", "",
-          "Same model/provider/seed/validation; only the state representation differs "
-          "(pln = plain facts + MeTTa/PLN-derived recommendations; plain = plain facts only).", "",
-          "| Metric | pln | plain | winner |", "| --- | --- | --- | --- |"]
+            ("Turns advanced", "turns_advanced"), ("Turns to 4 techs", "turns_to_tech_4"),
+            ("Illegal-action rate", "illegal_rate"), ("Avg actions/turn", "avg_actions_per_turn"),
+            ("Avg LLM facts/turn", "n_llm_facts"), ("Avg reason ms", "avg_reason_ms"),
+            ("Avg PLN conclusions/turn", "avg_conclusions"), ("Avg hops/turn", "avg_hops"),
+            ("Avg grounded/turn", "avg_grounded"),
+            ("PLN action success rate", "pln_action_success_rate"),
+            ("Rec adoption rate", "rec_adoption_rate"), ("LLM errors", "llm_errors")]
+    winner_key = {"score": "final_score", "peak_score": "peak_score", "n_cities": "cities",
+                  "n_techs": "techs", "turns_advanced": "turns_advanced",
+                  "turns_to_tech_4": "turns_to_tech_4", "illegal_rate": "illegal_rate"}
+    md = ["# FreeCiv 3-arm A/B — PLN chaining vs facts-only vs plain", "",
+          "Same model/provider/seed/validation; only the state representation differs. "
+          "`facts+chaining` = facts + PLN multi-hop recs; `facts-only` = the same facts, no PLN; "
+          "`plain` = no facts. Winner column = the primary contrast **%s vs %s** "
+          "(the marginal value of PLN chaining).", ""]
+    md[2] = md[2] % (a_name, b_name)
+    header = "| Metric | " + " | ".join(arms) + " | winner (%s vs %s) |" % (a_name, b_name)
+    md += [header, "| --- |" + " --- |" * (len(arms) + 1)]
     for label, key in rows:
-        winner = {"score": verdict["final_score"], "peak_score": verdict["peak_score"],
-                  "n_cities": verdict["cities"], "n_techs": verdict["techs"],
-                  "turns_advanced": verdict["turns_advanced"],
-                  "illegal_rate": verdict["illegal_rate"]}.get(key, "")
-        md.append("| %s | %s | %s | %s |" % (label, s["pln"].get(key), s["plain"].get(key), winner))
-    md += ["", "**Verdict:** %s (pln won %d, plain won %d of %d tracked metrics)."
-           % (overall, wins["pln"], wins["plain"], len(verdict)), "",
-           "> Caveat: one seed = a single matched pair — directional, not statistically conclusive. "
-           "PLN reasoning here is one-hop (situation→priority) via two-premise NAL.", ""]
+        cells = " | ".join(str(s[a].get(key)) for a in arms)
+        winner = verdict.get(winner_key.get(key, ""), "")
+        md.append("| %s | %s | %s |" % (label, cells, winner))
+    md += ["", "**Verdict (primary contrast %s vs %s):** %s (%s won %d, %s won %d of %d tracked metrics)."
+           % (a_name, b_name, overall, a_name, wins[a_name], b_name, wins[b_name], len(verdict)), "",
+           "> Caveat: one seed = a single matched set — directional, not statistically conclusive. "
+           "Aggregate across seeds with batch/aggregate.py for the sign-test / paired-t.", ""]
     with open(os.path.join(out_dir, "comparison.md"), "w", encoding="utf-8") as f:
         f.write("\n".join(md))
     return "\n".join(md)

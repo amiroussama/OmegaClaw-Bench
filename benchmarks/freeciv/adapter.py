@@ -235,10 +235,17 @@ def facts_from_state(norm):
     # --- resources: gold / science -----------------------------------------------------
     # Two observed shapes: documented {economic:{resources:{gold,science}}} and the real
     # runtime {economic:{gold, research}} (civcom.build_llm_optimized_state). Handle both.
+    # gold is read from the per-player block first: in the runtime shape economic.gold is often
+    # 0 while players[pid].gold carries the real value (so PLN doesn't reason over "Gold:0").
     econ = norm.get("economic") or {}
     resources = econ.get("resources") if isinstance(econ.get("resources"), dict) else econ
+    _player = next((p for p in norm.get("players", [])
+                    if isinstance(p, dict) and p.get("id") == pid), {})
+    _gold = _player.get("gold")
+    if not isinstance(_gold, (int, float)):
+        _gold = resources.get("gold")
     _res_vals = {
-        "gold": resources.get("gold"),
+        "gold": _gold,
         "science": resources.get("science", resources.get("research")),
     }
     for res, val in _res_vals.items():
@@ -255,7 +262,12 @@ def facts_from_state(norm):
     # Documented {strategic:{victory_progress:{current_score}}} vs real {strategic:{score}}.
     strat = norm.get("strategic") or {}
     vp = strat.get("victory_progress") if isinstance(strat.get("victory_progress"), dict) else {}
-    score = vp.get("current_score", strat.get("score"))
+    # per-player score preferred (>= 0; AI players report -1 = unknown), then summary blocks.
+    _pscore = _player.get("score")
+    if isinstance(_pscore, (int, float)) and _pscore >= 0:
+        score = _pscore
+    else:
+        score = vp.get("current_score", strat.get("score"))
     if isinstance(score, (int, float)):
         facts.append(_fact(_tok("Player", pid), "Evaluation", "Score:" + str(int(score)),
                            CONF_OBSERVED, "strategic"))
