@@ -48,11 +48,11 @@
   "per_size": {
     "1000": {
       "asserted_added": 1000,
-      "write_ms": 26.0,
+      "write_ms": 27.3,
       "hydration": {
         "n": 1000,
         "hydrated": 1000,
-        "hydrate_ms": 4.4,
+        "hydrate_ms": 4.7,
         "gate_ms": 500.0
       },
       "retransmission": {
@@ -63,17 +63,17 @@
         "one_time_writes": 1000,
         "neighborhood_reads": 2355,
         "avg_neighborhood": 47.1,
-        "read_ms": 4.3,
+        "read_ms": 4.6,
         "reduction": 0.9329
       }
     },
     "10000": {
       "asserted_added": 10000,
-      "write_ms": 298.6,
+      "write_ms": 305.3,
       "hydration": {
         "n": 10000,
         "hydrated": 10000,
-        "hydrate_ms": 45.3,
+        "hydrate_ms": 45.0,
         "gate_ms": 3000.0
       },
       "retransmission": {
@@ -84,7 +84,7 @@
         "one_time_writes": 10000,
         "neighborhood_reads": 12800,
         "avg_neighborhood": 256.0,
-        "read_ms": 50.7,
+        "read_ms": 50.8,
         "reduction": 0.9544
       }
     }

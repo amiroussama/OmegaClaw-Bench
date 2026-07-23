@@ -10,15 +10,15 @@ Per-tool latency over 5 runs/case (warm runtime; `infer` and `bootstrap_project`
 
 | Tool | samples | p50 ms | p95 ms |
 | --- | --- | --- | --- |
-| atom_assert | 115 | 0.01 | 0.3 |
-| atom_assert_batch | 10 | 0.0 | 0.45 |
-| atom_query | 40 | 0.21 | 0.36 |
-| atom_retract | 15 | 0.14 | 0.17 |
-| hybrid_recall | 10 | 0.41 | 3.14 |
-| revise | 10 | 0.2 | 0.33 |
-| scope_info | 10 | 0.17 | 0.24 |
-| snapshot_export | 10 | 0.46 | 0.62 |
-| snapshot_import | 15 | 0.39 | 0.68 |
+| atom_assert | 115 | 0.01 | 0.17 |
+| atom_assert_batch | 10 | 0.0 | 0.33 |
+| atom_query | 40 | 0.15 | 0.27 |
+| atom_retract | 15 | 0.1 | 0.13 |
+| hybrid_recall | 10 | 0.38 | 7.98 |
+| revise | 10 | 0.14 | 0.17 |
+| scope_info | 10 | 0.12 | 0.16 |
+| snapshot_export | 10 | 0.45 | 0.65 |
+| snapshot_import | 15 | 0.38 | 0.68 |
 
 Findings (non-gating): an unknown scope key format (e.g. `not-a-valid-scope!`) silently falls back to cwd resolution rather than returning a structured error — covered by `query-unknown-scope-format` as documented behavior.
 

@@ -321,56 +321,56 @@
     "atom_assert": {
       "n": 115,
       "p50_ms": 0.01,
-      "p95_ms": 0.3,
-      "mean_ms": 0.1
+      "p95_ms": 0.17,
+      "mean_ms": 0.07
     },
     "atom_assert_batch": {
       "n": 10,
       "p50_ms": 0.0,
-      "p95_ms": 0.45,
-      "mean_ms": 0.19
+      "p95_ms": 0.33,
+      "mean_ms": 0.14
     },
     "atom_query": {
       "n": 40,
-      "p50_ms": 0.21,
-      "p95_ms": 0.36,
-      "mean_ms": 0.18
+      "p50_ms": 0.15,
+      "p95_ms": 0.27,
+      "mean_ms": 0.13
     },
     "atom_retract": {
       "n": 15,
+      "p50_ms": 0.1,
+      "p95_ms": 0.13,
+      "mean_ms": 0.1
+    },
+    "hybrid_recall": {
+      "n": 10,
+      "p50_ms": 0.38,
+      "p95_ms": 7.98,
+      "mean_ms": 3.96
+    },
+    "revise": {
+      "n": 10,
       "p50_ms": 0.14,
       "p95_ms": 0.17,
       "mean_ms": 0.14
     },
-    "hybrid_recall": {
-      "n": 10,
-      "p50_ms": 0.41,
-      "p95_ms": 3.14,
-      "mean_ms": 1.52
-    },
-    "revise": {
-      "n": 10,
-      "p50_ms": 0.2,
-      "p95_ms": 0.33,
-      "mean_ms": 0.22
-    },
     "scope_info": {
       "n": 10,
-      "p50_ms": 0.17,
-      "p95_ms": 0.24,
-      "mean_ms": 0.18
+      "p50_ms": 0.12,
+      "p95_ms": 0.16,
+      "mean_ms": 0.13
     },
     "snapshot_export": {
       "n": 10,
-      "p50_ms": 0.46,
-      "p95_ms": 0.62,
-      "mean_ms": 0.47
+      "p50_ms": 0.45,
+      "p95_ms": 0.65,
+      "mean_ms": 0.46
     },
     "snapshot_import": {
       "n": 15,
-      "p50_ms": 0.39,
+      "p50_ms": 0.38,
       "p95_ms": 0.68,
-      "mean_ms": 0.35
+      "mean_ms": 0.36
     }
   },
   "interleaving": {

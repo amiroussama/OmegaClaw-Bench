@@ -4,8 +4,8 @@ Deterministic corpus (`random.Random(1001)`, all 5 heads, all 5 source_types, ~5
 
 | Corpus | write | hydrate (active_atoms + parse) | baseline atoms sent | candidate atoms sent | reduction |
 | --- | --- | --- | --- | --- | --- |
-| 1,000 | 26 ms | 4.4 ms < 500 ms | 50,000 | 3,355 | **93.3%** |
-| 10,000 | 299 ms | 45.3 ms < 3000 ms | 500,000 | 22,800 | **95.4%** |
+| 1,000 | 27 ms | 4.7 ms < 500 ms | 50,000 | 3,355 | **93.3%** |
+| 10,000 | 305 ms | 45.0 ms < 3000 ms | 500,000 | 22,800 | **95.4%** |
 
 | Section | Result | Gate |
 | --- | --- | --- |

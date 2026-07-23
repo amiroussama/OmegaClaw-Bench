@@ -72,15 +72,22 @@ def _hyperon_runner():
 
 
 _PETTA_RESULT_RE = re.compile(r"^\s*\[(.*)\]\s*$")
+_PETTA_ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
+_PETTA_NUM_RE = re.compile(r"^-?\d+(\.\d+)?([eE][-+]?\d+)?$")
 
 
 def _petta_runner():
-    """Raw PeTTa runner: the backend's `_run_program` filters output down to
-    ((atom) (stv f c)) conclusion pairs, which would drop bare stv/scalar
-    truth-case results — so truth cases go through the same subprocess
-    protocol but keep the raw result-line contents."""
+    """Raw PeTTa runner for truth-value cases: the backend's `_run_program`
+    filters output down to ((atom) (stv f c)) conclusion pairs, which would drop
+    bare stv/scalar truth-case results — so truth cases go through the same
+    subprocess protocol but keep the raw result-line contents.
+
+    Uses ``lib_source(minmax_shim=False)`` (PeTTa provides binary min/max
+    natively; the hyperon shim aborts it with `No permission to modify static
+    procedure min/3`), strips ANSI, and accepts BOTH the legacy bracketed form
+    and this PeTTa build's bare trailing ``(stv f c)`` / scalar result lines."""
     backend = PettaSubprocessBackend()
-    lib = lib_source()
+    lib = lib_source(minmax_shim=False)
 
     def run(query):
         fd, path = tempfile.mkstemp(suffix=".metta", prefix="asa_bench_")
@@ -96,11 +103,21 @@ def _petta_runner():
                 os.remove(path)
             except OSError:
                 pass
+        lines = [_PETTA_ANSI_RE.sub("", ln).strip() for ln in out.splitlines()]
+        # This PeTTa build prints the evaluation result AFTER the final prolog-
+        # goal terminator (a `^^^^` marker); everything before is the verbose
+        # metta->prolog translation dump (which contains stray constants like 0).
+        last_marker = max((i for i, ln in enumerate(lines) if ln.startswith("^^^")),
+                          default=-1)
         texts = []
-        for line in out.splitlines():
+        for line in lines[last_marker + 1:]:
+            if not line:
+                continue
             m = _PETTA_RESULT_RE.match(line)
             if m:
                 texts.append(m.group(1).replace(",", " "))
+            elif line.startswith("(stv ") or _PETTA_NUM_RE.match(line):
+                texts.append(line)   # bare result line (single query per subprocess)
         return texts
     return run
 

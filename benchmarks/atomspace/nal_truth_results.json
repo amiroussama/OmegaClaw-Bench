@@ -39,7 +39,7 @@
         "max_abs_delta_c": 3.07692760159739e-11,
         "failures": []
       },
-      "elapsed_s": 1.17
+      "elapsed_s": 1.14
     },
     "petta": {
       "status": "SKIPPED",

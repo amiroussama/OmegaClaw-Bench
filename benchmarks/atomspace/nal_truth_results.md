@@ -6,7 +6,7 @@ the pure backend runs rule cases only (its arithmetic IS the reference).
 
 | Backend | Status | Truth cases pass | Rule cases pass | max abs Δ | s |
 | --- | --- | --- | --- | --- | --- |
-| hyperon | RUN | 236/236 | 4/4 | 3.08e-11 | 1.17 |
+| hyperon | RUN | 236/236 | 4/4 | 3.08e-11 | 1.14 |
 | petta | SKIPPED | — | — | — | — |
 | pure | RUN | n/a (golden ref) | 3/3 (+1 skipped arrow-form) | 3.08e-11 | — |
 
