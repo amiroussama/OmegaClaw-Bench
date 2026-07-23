@@ -29,9 +29,11 @@ python3 dump_atoms.py
 if [ "$MODE" = "prod" ]; then
   echo "[viz] building…"
   npm run build
+  cp -r public/data dist/ 2>/dev/null || true   # ensure freshest data is in the served tree
   echo "[viz] serving dist/ at http://localhost:$PORT/  (Ctrl-C to stop)"
-  exec python3 -m http.server "$PORT" --directory dist
+  exec python3 -m http.server "$PORT" --bind 0.0.0.0 --directory dist
 else
-  echo "[viz] dev server at http://localhost:$PORT/  (Ctrl-C to stop)"
-  exec npm run dev -- --port "$PORT"
+  # --host binds all interfaces so the page is reachable over LAN/Tailscale, not just localhost.
+  echo "[viz] dev server at http://localhost:$PORT/  (also on this host's LAN IP; Ctrl-C to stop)"
+  exec npm run dev -- --host --port "$PORT"
 fi
