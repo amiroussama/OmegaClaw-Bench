@@ -1,0 +1,36 @@
+{
+  "model": "MOCK",
+  "self_test": true,
+  "summary": {
+    "n_per_seed": 120,
+    "by_kind": {
+      "multihop": 60,
+      "direct": 40,
+      "negative": 20
+    },
+    "seed_base": 2205
+  },
+  "aggregate": {
+    "n": 360,
+    "seeds": 3,
+    "cases_per_seed": 120,
+    "plain_accuracy": 0.5,
+    "memory_accuracy": 1.0,
+    "net_accuracy_pts": 50.0,
+    "memory_wins": 180,
+    "plain_wins": 0,
+    "sign_test_p": 1.2501171231839267e-12,
+    "plain_tokens_median": 33.0,
+    "memory_tokens_median": 48.5,
+    "token_multiplier": 1.47,
+    "plain_ms_median": 1.0,
+    "memory_ms_median": 1.0
+  },
+  "gate": {
+    "passed": false,
+    "self_test": true,
+    "failures": [
+      "token multiplier 1.47 > 1.25"
+    ]
+  }
+}
