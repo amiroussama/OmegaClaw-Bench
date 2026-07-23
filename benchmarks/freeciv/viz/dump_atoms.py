@@ -93,7 +93,7 @@ def dump(state_path):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--state", default=_DEFAULT_STATE)
-    ap.add_argument("--out", default=os.path.join(_HERE, "data", "atoms.json"))
+    ap.add_argument("--out", default=os.path.join(_HERE, "public", "data", "atoms.json"))
     args = ap.parse_args()
     if not os.path.isfile(args.state):
         print("state file not found: %s" % args.state, file=sys.stderr)

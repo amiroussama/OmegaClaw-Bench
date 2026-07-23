@@ -1,0 +1,357 @@
+/* Layout + reusable components for the FreeCiv PLN viz. Roles reference theme.css tokens. */
+
+/* ---- App shell / nav ------------------------------------------------------ */
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+.topnav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 10px 24px;
+  background: color-mix(in srgb, var(--page) 92%, transparent);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--border);
+}
+.topnav .brand {
+  font-weight: 680;
+  font-size: 14.5px;
+  letter-spacing: 0.01em;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.topnav .brand .dotmark {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  background: var(--arm-v2);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--arm-v2) 22%, transparent);
+}
+.topnav nav {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.topnav nav a {
+  color: var(--ink-2);
+  padding: 6px 11px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 550;
+}
+.topnav nav a:hover {
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  text-decoration: none;
+}
+.topnav nav a.active {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--arm-chaining) 15%, transparent);
+}
+.topnav .spacer {
+  margin-left: auto;
+}
+.iconbtn {
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--ink);
+  background: var(--surface-1);
+  border: 1px solid var(--axis);
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+.iconbtn:hover {
+  border-color: var(--ink-2);
+}
+
+.page {
+  padding: 20px 24px 72px;
+  max-width: 1360px;
+  width: 100%;
+  margin: 0 auto;
+}
+.page-head {
+  margin-bottom: 14px;
+}
+.page-head .sub {
+  color: var(--ink-2);
+  font-size: 13px;
+}
+
+/* ---- Controls bar --------------------------------------------------------- */
+.controls {
+  display: flex;
+  gap: 14px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+label.ctl {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+select,
+input[type="search"] {
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink);
+  background: var(--surface-1);
+  border: 1px solid var(--axis);
+  border-radius: 8px;
+  padding: 6px 10px;
+  min-width: 160px;
+}
+input[type="range"] {
+  width: 260px;
+  accent-color: var(--arm-chaining);
+}
+
+/* ---- Cards / sections ----------------------------------------------------- */
+.card {
+  background: var(--tile);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+.section {
+  margin-top: 22px;
+}
+.note {
+  color: var(--muted);
+  font-size: 12px;
+  margin: 0 0 12px;
+}
+.grid {
+  display: grid;
+  gap: 14px;
+}
+.two-col {
+  grid-template-columns: 1fr 1fr;
+}
+@media (max-width: 900px) {
+  .two-col {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---- Stat tiles ----------------------------------------------------------- */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+.tile {
+  background: var(--tile);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+}
+.tile .k {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.tile .v {
+  font-size: 24px;
+  font-weight: 650;
+  margin-top: 3px;
+}
+.tile .sub {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.tile.hero {
+  grid-column: span 2;
+}
+.tile.hero .v {
+  font-size: 30px;
+}
+
+/* ---- Badges / pills ------------------------------------------------------- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px;
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+.badge .sw {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+}
+.badge.good {
+  color: var(--good-text);
+  background: color-mix(in srgb, var(--good) 15%, transparent);
+}
+.badge.warn {
+  color: color-mix(in srgb, var(--warning) 55%, var(--ink));
+  background: color-mix(in srgb, var(--warning) 20%, transparent);
+}
+.badge.crit {
+  color: var(--critical);
+  background: color-mix(in srgb, var(--critical) 15%, transparent);
+}
+.badge.neutral {
+  color: var(--ink-2);
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+}
+.sig {
+  font-weight: 700;
+}
+.sig.yes {
+  color: var(--good-text);
+}
+.sig.no {
+  color: var(--muted);
+}
+
+/* ---- Legend --------------------------------------------------------------- */
+.legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--ink-2);
+  margin: 2px 0 10px;
+}
+.legend .item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.legend .sw {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+/* ---- Tables --------------------------------------------------------------- */
+table.tbl {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 12.5px;
+}
+table.tbl th,
+table.tbl td {
+  text-align: left;
+  padding: 6px 9px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+table.tbl th {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+table.tbl td.num,
+table.tbl th.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+tr.rowbtn {
+  cursor: pointer;
+}
+tr.rowbtn:hover {
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+}
+
+/* ---- Charts --------------------------------------------------------------- */
+.chart {
+  background: var(--tile);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 12px 8px;
+}
+.chart .ct {
+  font-size: 12.5px;
+  font-weight: 600;
+  margin: 0 2px 6px;
+}
+svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.grid-lines line {
+  stroke: var(--grid);
+  stroke-width: 1;
+}
+.axis line,
+.axis path {
+  stroke: var(--axis);
+}
+.axis text {
+  fill: var(--muted);
+  font-size: 10px;
+}
+.serieslabel {
+  font-size: 10.5px;
+  font-weight: 600;
+}
+.crosshair {
+  stroke: var(--axis);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  gap: 14px;
+}
+
+/* ---- Tooltip -------------------------------------------------------------- */
+.tooltip {
+  position: fixed;
+  pointer-events: none;
+  z-index: 40;
+  background: var(--surface-1);
+  border: 1px solid var(--axis);
+  border-radius: 8px;
+  padding: 7px 9px;
+  font-size: 12px;
+  box-shadow: var(--shadow);
+  opacity: 0;
+  transition: opacity 0.08s;
+  max-width: 280px;
+}
+.tooltip .tt-t {
+  color: var(--muted);
+  font-size: 11px;
+  margin-bottom: 3px;
+}
+.tooltip .row {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+/* ---- Empty / loading ------------------------------------------------------ */
+.empty {
+  color: var(--muted);
+  font-style: italic;
+  padding: 14px 2px;
+}
+.spinner {
+  color: var(--muted);
+  padding: 40px 2px;
+  text-align: center;
+}
