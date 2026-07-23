@@ -22,7 +22,11 @@ export default function Heatmap({
   return (
     <div className="chart" style={{ overflowX: "auto" }}>
       <div className="ct">Per-seed winners</div>
-      <svg viewBox={`0 0 ${W} ${H}`} width={W} role="img" aria-label="per-seed winner matrix">
+      {/* Fixed pixel size (inline style beats the global `svg{width:100%}`) so cells stay small
+          and readable; maxWidth+overflow-auto lets it scroll on narrow screens instead of scaling up. */}
+      <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H}
+        style={{ width: `${W}px`, height: `${H}px`, flex: "none" }}
+        role="img" aria-label="per-seed winner matrix">
         {columns.map((c, ci) => (
           <text key={c.key} x={labelW + ci * (cell + 4) + cell / 2} y={headH - 8} textAnchor="end"
             fontSize={10.5} fill="var(--muted)" transform={`rotate(-35 ${labelW + ci * (cell + 4) + cell / 2} ${headH - 8})`}>
