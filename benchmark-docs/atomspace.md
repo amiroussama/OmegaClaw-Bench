@@ -53,7 +53,7 @@ Full tables: `benchmarks/atomspace/*_results.md`.
 
 | Tier | Result | Headline |
 | --- | --- | --- |
-| T0.1 nal_truth | **PASSED** | hyperon 236/236 truth + 4/4 rule cases at eps 1e-6 (max abs delta 3.1e-11) on the host; pure backend 3/3 rule cases (arrow-form NAL skipped by design). PeTTa is **SKIPPED in the committed (host) results table** (`nal_truth_results.*`, backend unavailable on that host); a separate in-container run (2026-07-21) verified petta parity (236/236 truth + 4/4 rule cases, max abs delta 3.08e-11) — see the "PeTTa parity" note below. Regenerate the results table in-container to fold petta into it. |
+| T0.1 nal_truth | **PASSED** | hyperon 236/236 truth + 4/4 rule cases at eps 1e-6 (max abs delta 3.1e-11) on the host; pure backend 3/3 rule cases (arrow-form NAL skipped by design). PeTTa is **SKIPPED in the committed (host) results table** (`nal_truth_results.*`, backend unavailable on that host); a separate in-container run (2026-07-23) verified petta parity (236/236 truth + 4/4 rule cases, max abs delta 3.08e-11) — see the "PeTTa parity" note below. Regenerate the results table in-container to fold petta into it. |
 | T0.2 atomstore | **PASSED** | fidelity 1000/1000 (100%); 0/1320 cross-scope leaks; 67/67 supersession excluded-by-default AND visible-on-request; crash recovery clean (integrity_check=ok, 250/250 rows after os._exit(1)); hydrate 1k=4.6ms, 10k=44.5ms; re-transmission reduction 93.3% (1k) / 95.4% (10k). |
 | T0.3 mcp_conformance | **PASSED** (first run FAILED; product fixed, gate held) | Final: 52/52 cases; worst tool p95 8.0ms << 150ms gate; stdio transport ok (11 tools via real MCP initialize/list/call); interleaving 3/3 lossless trials. |
 
@@ -72,7 +72,7 @@ read-modify-write) and the suite re-run unchanged — except one fixture whose
 scope keys; the fixed product now returns a structured error there, which the
 fixture now requires.
 
-PeTTa parity (2026-07-21) — the register's #1 risk ("hyperon/PeTTa drift
+PeTTa parity (2026-07-23) — the register's #1 risk ("hyperon/PeTTa drift
 unverified in practice") is now closed, but only after the gate exposed two real
 product defects the earlier host-only runs could not: (1) `lib_compat.metta`
 defined binary `min`/`max` for hyperon, which PeTTa rejects as `No permission to
@@ -88,7 +88,7 @@ and the benchmark's truth-case `_petta_runner`). Reproduce with
 
 ## T1 results
 
-Runs of 2026-07-21 on the same host venv. Host-runnable and deterministic (no
+Runs of 2026-07-23 on the same host venv. Host-runnable and deterministic (no
 LLM). Full tables: `benchmarks/atomspace/{hybrid_retrieval,revision_staleness,scope_routing}_results.md`.
 
 | Tier | Result | Headline |
@@ -110,7 +110,7 @@ through `resolve()`/`db_path()` auto-routing rather than hand-picked keys.
 
 ## T2 results
 
-Runs of 2026-07-21 on the same host venv (hyperon 0.2.10; in-process inference
+Runs of 2026-07-23 on the same host venv (hyperon 0.2.10; in-process inference
 so all 80 cases share one warm runtime — the pre-registered latency basis).
 Full table: `benchmarks/atomspace/multihop_impact_results.md`.
 
