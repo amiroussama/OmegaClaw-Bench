@@ -1,0 +1,624 @@
+{
+  "summary": {
+    "n": 60,
+    "seed": 2203,
+    "by_kind": {
+      "revision": 30,
+      "supersession": 30
+    }
+  },
+  "aggregate": {
+    "n": 60,
+    "candidate_accuracy": 1.0,
+    "baseline_accuracy": 0.1667,
+    "candidate_leak": 0.0,
+    "baseline_leak": 0.8333,
+    "accuracy_delta": 0.8333
+  },
+  "per_case": [
+    {
+      "gold": true,
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "cand_f": 0.9056,
+      "base_f": 0.157,
+      "id": "rev-wrong-00",
+      "kind": "revision"
+    },
+    {
+      "gold": true,
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "cand_f": 0.8953,
+      "base_f": 0.13,
+      "id": "rev-wrong-01",
+      "kind": "revision"
+    },
+    {
+      "gold": true,
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "cand_f": 0.8534,
+      "base_f": 0.081,
+      "id": "rev-wrong-02",
+      "kind": "revision"
+    },
+    {
+      "gold": true,
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "cand_f": 0.7999,
+      "base_f": 0.203,
+      "id": "rev-wrong-03",
+      "kind": "revision"
+    },
+    {
+      "gold": true,
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "cand_f": 0.8851,
+      "base_f": 0.167,
+      "id": "rev-wrong-04",
+      "kind": "revision"
+    },
+    {
+      "gold": true,
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "cand_f": 0.8621,
+      "base_f": 0.244,
+      "id": "rev-wrong-05",
+      "kind": "revision"
+    },
+    {
+      "gold": true,
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "cand_f": 0.8392,
+      "base_f": 0.192,
+      "id": "rev-wrong-06",
+      "kind": "revision"
+    },
+    {
+      "gold": true,
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "cand_f": 0.8438,
+      "base_f": 0.078,
+      "id": "rev-wrong-07",
+      "kind": "revision"
+    },
+    {
+      "gold": true,
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "cand_f": 0.8972,
+      "base_f": 0.179,
+      "id": "rev-wrong-08",
+      "kind": "revision"
+    },
+    {
+      "gold": true,
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "cand_f": 0.8418,
+      "base_f": 0.097,
+      "id": "rev-wrong-09",
+      "kind": "revision"
+    },
+    {
+      "gold": true,
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "cand_f": 0.8794,
+      "base_f": 0.173,
+      "id": "rev-wrong-10",
+      "kind": "revision"
+    },
+    {
+      "gold": true,
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "cand_f": 0.9271,
+      "base_f": 0.102,
+      "id": "rev-wrong-11",
+      "kind": "revision"
+    },
+    {
+      "gold": true,
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "cand_f": 0.8187,
+      "base_f": 0.101,
+      "id": "rev-wrong-12",
+      "kind": "revision"
+    },
+    {
+      "gold": true,
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "cand_f": 0.8812,
+      "base_f": 0.237,
+      "id": "rev-wrong-13",
+      "kind": "revision"
+    },
+    {
+      "gold": true,
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "cand_f": 0.8583,
+      "base_f": 0.106,
+      "id": "rev-wrong-14",
+      "kind": "revision"
+    },
+    {
+      "gold": true,
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "cand_f": 0.8348,
+      "base_f": 0.248,
+      "id": "rev-wrong-15",
+      "kind": "revision"
+    },
+    {
+      "gold": true,
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "cand_f": 0.856,
+      "base_f": 0.057,
+      "id": "rev-wrong-16",
+      "kind": "revision"
+    },
+    {
+      "gold": true,
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "cand_f": 0.8805,
+      "base_f": 0.113,
+      "id": "rev-wrong-17",
+      "kind": "revision"
+    },
+    {
+      "gold": true,
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "cand_f": 0.9208,
+      "base_f": 0.195,
+      "id": "rev-wrong-18",
+      "kind": "revision"
+    },
+    {
+      "gold": true,
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "cand_f": 0.9166,
+      "base_f": 0.097,
+      "id": "rev-wrong-19",
+      "kind": "revision"
+    },
+    {
+      "gold": true,
+      "cand_correct": true,
+      "base_correct": true,
+      "cand_leak": false,
+      "base_leak": false,
+      "cand_f": 0.9274,
+      "base_f": 0.809,
+      "id": "rev-refine-00",
+      "kind": "revision"
+    },
+    {
+      "gold": true,
+      "cand_correct": true,
+      "base_correct": true,
+      "cand_leak": false,
+      "base_leak": false,
+      "cand_f": 0.8771,
+      "base_f": 0.742,
+      "id": "rev-refine-01",
+      "kind": "revision"
+    },
+    {
+      "gold": true,
+      "cand_correct": true,
+      "base_correct": true,
+      "cand_leak": false,
+      "base_leak": false,
+      "cand_f": 0.9089,
+      "base_f": 0.79,
+      "id": "rev-refine-02",
+      "kind": "revision"
+    },
+    {
+      "gold": true,
+      "cand_correct": true,
+      "base_correct": true,
+      "cand_leak": false,
+      "base_leak": false,
+      "cand_f": 0.8503,
+      "base_f": 0.845,
+      "id": "rev-refine-03",
+      "kind": "revision"
+    },
+    {
+      "gold": true,
+      "cand_correct": true,
+      "base_correct": true,
+      "cand_leak": false,
+      "base_leak": false,
+      "cand_f": 0.8566,
+      "base_f": 0.711,
+      "id": "rev-refine-04",
+      "kind": "revision"
+    },
+    {
+      "gold": true,
+      "cand_correct": true,
+      "base_correct": true,
+      "cand_leak": false,
+      "base_leak": false,
+      "cand_f": 0.8644,
+      "base_f": 0.749,
+      "id": "rev-refine-05",
+      "kind": "revision"
+    },
+    {
+      "gold": true,
+      "cand_correct": true,
+      "base_correct": true,
+      "cand_leak": false,
+      "base_leak": false,
+      "cand_f": 0.8882,
+      "base_f": 0.799,
+      "id": "rev-refine-06",
+      "kind": "revision"
+    },
+    {
+      "gold": true,
+      "cand_correct": true,
+      "base_correct": true,
+      "cand_leak": false,
+      "base_leak": false,
+      "cand_f": 0.8733,
+      "base_f": 0.776,
+      "id": "rev-refine-07",
+      "kind": "revision"
+    },
+    {
+      "gold": true,
+      "cand_correct": true,
+      "base_correct": true,
+      "cand_leak": false,
+      "base_leak": false,
+      "cand_f": 0.9375,
+      "base_f": 0.831,
+      "id": "rev-refine-08",
+      "kind": "revision"
+    },
+    {
+      "gold": true,
+      "cand_correct": true,
+      "base_correct": true,
+      "cand_leak": false,
+      "base_leak": false,
+      "cand_f": 0.9089,
+      "base_f": 0.822,
+      "id": "rev-refine-09",
+      "kind": "revision"
+    },
+    {
+      "gold": "module:core0",
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "id": "super-00",
+      "kind": "supersession"
+    },
+    {
+      "gold": "module:core1",
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "id": "super-01",
+      "kind": "supersession"
+    },
+    {
+      "gold": "module:core2",
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "id": "super-02",
+      "kind": "supersession"
+    },
+    {
+      "gold": "module:core3",
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "id": "super-03",
+      "kind": "supersession"
+    },
+    {
+      "gold": "module:core4",
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "id": "super-04",
+      "kind": "supersession"
+    },
+    {
+      "gold": "module:core5",
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "id": "super-05",
+      "kind": "supersession"
+    },
+    {
+      "gold": "module:core6",
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "id": "super-06",
+      "kind": "supersession"
+    },
+    {
+      "gold": "module:core7",
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "id": "super-07",
+      "kind": "supersession"
+    },
+    {
+      "gold": "module:core8",
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "id": "super-08",
+      "kind": "supersession"
+    },
+    {
+      "gold": "module:core9",
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "id": "super-09",
+      "kind": "supersession"
+    },
+    {
+      "gold": "module:core10",
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "id": "super-10",
+      "kind": "supersession"
+    },
+    {
+      "gold": "module:core11",
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "id": "super-11",
+      "kind": "supersession"
+    },
+    {
+      "gold": "module:core12",
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "id": "super-12",
+      "kind": "supersession"
+    },
+    {
+      "gold": "module:core13",
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "id": "super-13",
+      "kind": "supersession"
+    },
+    {
+      "gold": "module:core14",
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "id": "super-14",
+      "kind": "supersession"
+    },
+    {
+      "gold": "module:core15",
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "id": "super-15",
+      "kind": "supersession"
+    },
+    {
+      "gold": "module:core16",
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "id": "super-16",
+      "kind": "supersession"
+    },
+    {
+      "gold": "module:core17",
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "id": "super-17",
+      "kind": "supersession"
+    },
+    {
+      "gold": "module:core18",
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "id": "super-18",
+      "kind": "supersession"
+    },
+    {
+      "gold": "module:core19",
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "id": "super-19",
+      "kind": "supersession"
+    },
+    {
+      "gold": "module:core20",
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "id": "super-20",
+      "kind": "supersession"
+    },
+    {
+      "gold": "module:core21",
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "id": "super-21",
+      "kind": "supersession"
+    },
+    {
+      "gold": "module:core22",
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "id": "super-22",
+      "kind": "supersession"
+    },
+    {
+      "gold": "module:core23",
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "id": "super-23",
+      "kind": "supersession"
+    },
+    {
+      "gold": "module:core24",
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "id": "super-24",
+      "kind": "supersession"
+    },
+    {
+      "gold": "module:core25",
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "id": "super-25",
+      "kind": "supersession"
+    },
+    {
+      "gold": "module:core26",
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "id": "super-26",
+      "kind": "supersession"
+    },
+    {
+      "gold": "module:core27",
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "id": "super-27",
+      "kind": "supersession"
+    },
+    {
+      "gold": "module:core28",
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "id": "super-28",
+      "kind": "supersession"
+    },
+    {
+      "gold": "module:core29",
+      "cand_correct": true,
+      "base_correct": false,
+      "cand_leak": false,
+      "base_leak": true,
+      "id": "super-29",
+      "kind": "supersession"
+    }
+  ],
+  "gate": {
+    "passed": true,
+    "failures": []
+  }
+}

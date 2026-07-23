@@ -1,0 +1,863 @@
+{
+  "summary": {
+    "n": 80,
+    "seed": 2101,
+    "by_family": {
+      "direct": 25,
+      "impact-chain": 25,
+      "invariant": 15,
+      "negative": 15
+    },
+    "by_kind": {
+      "direct": 25,
+      "multihop": 40,
+      "negative": 15
+    },
+    "needs_code_rules": 15,
+    "invariants": 3
+  },
+  "code_rules_mode": "code_rules loaded",
+  "min_confidence": 0.2,
+  "max_hops": 3,
+  "aggregate": {
+    "n": 80,
+    "pln_exact": 1.0,
+    "baseline_exact": 0.5,
+    "delta": 0.5,
+    "flips_to_correct": 40,
+    "flips_to_wrong": 0,
+    "net_flips": 40,
+    "sign_test_p": 1.8189894035458565e-12,
+    "median_latency_ms": 87.2,
+    "mean_latency_ms": 137.1,
+    "max_latency_ms": 354.3,
+    "by_family": {
+      "direct": {
+        "n": 25,
+        "pln": 25,
+        "base": 25
+      },
+      "impact-chain": {
+        "n": 25,
+        "pln": 25,
+        "base": 0
+      },
+      "invariant": {
+        "n": 15,
+        "pln": 15,
+        "base": 0
+      },
+      "negative": {
+        "n": 15,
+        "pln": 15,
+        "base": 15
+      }
+    }
+  },
+  "per_case": [
+    {
+      "id": "direct-00",
+      "family": "direct",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": true,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 41.1
+    },
+    {
+      "id": "direct-01",
+      "family": "direct",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": true,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 25.4
+    },
+    {
+      "id": "direct-02",
+      "family": "direct",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": true,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 1.5
+    },
+    {
+      "id": "direct-03",
+      "family": "direct",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": true,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 23.2
+    },
+    {
+      "id": "direct-04",
+      "family": "direct",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": true,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 25.6
+    },
+    {
+      "id": "direct-05",
+      "family": "direct",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": true,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 1.6
+    },
+    {
+      "id": "direct-06",
+      "family": "direct",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": true,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 23.1
+    },
+    {
+      "id": "direct-07",
+      "family": "direct",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": true,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 25.3
+    },
+    {
+      "id": "direct-08",
+      "family": "direct",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": true,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 1.6
+    },
+    {
+      "id": "direct-09",
+      "family": "direct",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": true,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 23.2
+    },
+    {
+      "id": "direct-10",
+      "family": "direct",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": true,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 25.1
+    },
+    {
+      "id": "direct-11",
+      "family": "direct",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": true,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 1.5
+    },
+    {
+      "id": "direct-12",
+      "family": "direct",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": true,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 23.2
+    },
+    {
+      "id": "direct-13",
+      "family": "direct",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": true,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 25.3
+    },
+    {
+      "id": "direct-14",
+      "family": "direct",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": true,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 1.5
+    },
+    {
+      "id": "direct-15",
+      "family": "direct",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": true,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 23.4
+    },
+    {
+      "id": "direct-16",
+      "family": "direct",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": true,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 25.4
+    },
+    {
+      "id": "direct-17",
+      "family": "direct",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": true,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 1.5
+    },
+    {
+      "id": "direct-18",
+      "family": "direct",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": true,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 23.2
+    },
+    {
+      "id": "direct-19",
+      "family": "direct",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": true,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 26.0
+    },
+    {
+      "id": "direct-20",
+      "family": "direct",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": true,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 1.6
+    },
+    {
+      "id": "direct-21",
+      "family": "direct",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": true,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 23.3
+    },
+    {
+      "id": "direct-22",
+      "family": "direct",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": true,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 25.2
+    },
+    {
+      "id": "direct-23",
+      "family": "direct",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": true,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 1.5
+    },
+    {
+      "id": "direct-24",
+      "family": "direct",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": true,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 23.9
+    },
+    {
+      "id": "impact-00",
+      "family": "impact-chain",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 133.5
+    },
+    {
+      "id": "impact-01",
+      "family": "impact-chain",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 343.2
+    },
+    {
+      "id": "impact-02",
+      "family": "impact-chain",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 134.0
+    },
+    {
+      "id": "impact-03",
+      "family": "impact-chain",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 343.1
+    },
+    {
+      "id": "impact-04",
+      "family": "impact-chain",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 136.3
+    },
+    {
+      "id": "impact-05",
+      "family": "impact-chain",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 340.2
+    },
+    {
+      "id": "impact-06",
+      "family": "impact-chain",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 133.3
+    },
+    {
+      "id": "impact-07",
+      "family": "impact-chain",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 340.4
+    },
+    {
+      "id": "impact-08",
+      "family": "impact-chain",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 133.2
+    },
+    {
+      "id": "impact-09",
+      "family": "impact-chain",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 354.3
+    },
+    {
+      "id": "impact-10",
+      "family": "impact-chain",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 152.3
+    },
+    {
+      "id": "impact-11",
+      "family": "impact-chain",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 347.1
+    },
+    {
+      "id": "impact-12",
+      "family": "impact-chain",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 134.5
+    },
+    {
+      "id": "impact-13",
+      "family": "impact-chain",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 343.0
+    },
+    {
+      "id": "impact-14",
+      "family": "impact-chain",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 135.0
+    },
+    {
+      "id": "impact-15",
+      "family": "impact-chain",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 339.4
+    },
+    {
+      "id": "impact-16",
+      "family": "impact-chain",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 142.1
+    },
+    {
+      "id": "impact-17",
+      "family": "impact-chain",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 347.0
+    },
+    {
+      "id": "impact-18",
+      "family": "impact-chain",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 133.2
+    },
+    {
+      "id": "impact-19",
+      "family": "impact-chain",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 340.1
+    },
+    {
+      "id": "impact-20",
+      "family": "impact-chain",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 133.3
+    },
+    {
+      "id": "impact-21",
+      "family": "impact-chain",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 342.3
+    },
+    {
+      "id": "impact-22",
+      "family": "impact-chain",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 140.6
+    },
+    {
+      "id": "impact-23",
+      "family": "impact-chain",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 340.6
+    },
+    {
+      "id": "impact-24",
+      "family": "impact-chain",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 134.5
+    },
+    {
+      "id": "invariant-00",
+      "family": "invariant",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 38.6
+    },
+    {
+      "id": "invariant-01",
+      "family": "invariant",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 38.7
+    },
+    {
+      "id": "invariant-02",
+      "family": "invariant",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 38.9
+    },
+    {
+      "id": "invariant-03",
+      "family": "invariant",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 39.4
+    },
+    {
+      "id": "invariant-04",
+      "family": "invariant",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 40.3
+    },
+    {
+      "id": "invariant-05",
+      "family": "invariant",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 39.5
+    },
+    {
+      "id": "invariant-06",
+      "family": "invariant",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 39.2
+    },
+    {
+      "id": "invariant-07",
+      "family": "invariant",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 39.3
+    },
+    {
+      "id": "invariant-08",
+      "family": "invariant",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 41.3
+    },
+    {
+      "id": "invariant-09",
+      "family": "invariant",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 39.9
+    },
+    {
+      "id": "invariant-10",
+      "family": "invariant",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 39.9
+    },
+    {
+      "id": "invariant-11",
+      "family": "invariant",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 39.8
+    },
+    {
+      "id": "invariant-12",
+      "family": "invariant",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 39.5
+    },
+    {
+      "id": "invariant-13",
+      "family": "invariant",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 39.5
+    },
+    {
+      "id": "invariant-14",
+      "family": "invariant",
+      "gold": true,
+      "pln_yes": true,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": false,
+      "latency_ms": 39.9
+    },
+    {
+      "id": "negative-00",
+      "family": "negative",
+      "gold": false,
+      "pln_yes": false,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 269.6
+    },
+    {
+      "id": "negative-01",
+      "family": "negative",
+      "gold": false,
+      "pln_yes": false,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 266.6
+    },
+    {
+      "id": "negative-02",
+      "family": "negative",
+      "gold": false,
+      "pln_yes": false,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 272.1
+    },
+    {
+      "id": "negative-03",
+      "family": "negative",
+      "gold": false,
+      "pln_yes": false,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 271.0
+    },
+    {
+      "id": "negative-04",
+      "family": "negative",
+      "gold": false,
+      "pln_yes": false,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 274.7
+    },
+    {
+      "id": "negative-05",
+      "family": "negative",
+      "gold": false,
+      "pln_yes": false,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 270.9
+    },
+    {
+      "id": "negative-06",
+      "family": "negative",
+      "gold": false,
+      "pln_yes": false,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 271.5
+    },
+    {
+      "id": "negative-07",
+      "family": "negative",
+      "gold": false,
+      "pln_yes": false,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 266.8
+    },
+    {
+      "id": "negative-08",
+      "family": "negative",
+      "gold": false,
+      "pln_yes": false,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 266.6
+    },
+    {
+      "id": "negative-09",
+      "family": "negative",
+      "gold": false,
+      "pln_yes": false,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 267.6
+    },
+    {
+      "id": "negative-10",
+      "family": "negative",
+      "gold": false,
+      "pln_yes": false,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 266.7
+    },
+    {
+      "id": "negative-11",
+      "family": "negative",
+      "gold": false,
+      "pln_yes": false,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 271.4
+    },
+    {
+      "id": "negative-12",
+      "family": "negative",
+      "gold": false,
+      "pln_yes": false,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 267.7
+    },
+    {
+      "id": "negative-13",
+      "family": "negative",
+      "gold": false,
+      "pln_yes": false,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 267.0
+    },
+    {
+      "id": "negative-14",
+      "family": "negative",
+      "gold": false,
+      "pln_yes": false,
+      "baseline_yes": false,
+      "pln_correct": true,
+      "baseline_correct": true,
+      "latency_ms": 268.0
+    }
+  ],
+  "gate": {
+    "passed": true,
+    "failures": []
+  }
+}

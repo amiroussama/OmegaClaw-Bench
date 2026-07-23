@@ -1,0 +1,20 @@
+{
+  "summary": {
+    "seed": 2204,
+    "repos": 6,
+    "subdirs_per_repo": 8,
+    "probes": 48
+  },
+  "result": {
+    "routing_accuracy": 1.0,
+    "routed": 48,
+    "n_probes": 48,
+    "distinct_scopes": 5,
+    "cross_scope_lookups": 300,
+    "leaks": 0
+  },
+  "gate": {
+    "passed": true,
+    "failures": []
+  }
+}
