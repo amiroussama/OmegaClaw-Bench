@@ -8,6 +8,8 @@ venv/
 # FreeCiv run artifacts are regenerated; keep committed sample runs but ignore fresh ones.
 benchmarks/freeciv/ab_runs/tmp_*/
 benchmarks/freeciv/viz/data/
+benchmarks/freeciv/viz/dist/
+benchmarks/freeciv/viz/node_modules/
 
 # Batch/live-run RAW artifacts are large and regenerable; only the aggregate/comparison summaries
 # (aggregate.{md,json}, comparison.{md,json}, manifest.json) are meant to be committed as evidence.

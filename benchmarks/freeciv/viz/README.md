@@ -1,59 +1,50 @@
 # FreeCiv benchmark visualization
 
-A single self-contained webpage to explore the PLN-vs-plain-LLM benchmark runs: moves over
-time, per-run stats, and the OmegaClaw+PLN player's atomspace. No build step, no dependencies
-(stdlib Python + vanilla-JS/SVG page).
+A React/Vite adaptation of the **Decision Observatory** frontend from
+`machieke/freeciv-omegaclaw`, wired to this repository's FreeCiv benchmark artifacts.
+
+The data contract stays local to OmegaClaw-Bench:
+
+- `build_index.py` → `data/index.json`: run catalog, per-run stats, duel/A-B summaries, optional
+  per-unit move traces, and KPI fixture results.
+- `dump_atoms.py` → `data/atoms.json` and `data/atomspace_snapshot.json`: representative
+  Atomspace facts, rules, recommendations, and lint metadata.
 
 ## Quick start
 
 ```bash
-bash benchmarks/freeciv/viz/serve.sh          # regenerates data, serves at http://localhost:8009
+bash benchmarks/freeciv/viz/serve.sh          # regenerates data, builds UI, serves http://localhost:8009
 ```
 
-Then open <http://localhost:8009/>. (A browser can't `fetch()` over `file://`, so it must be
-served — `serve.sh` runs the two generators below, then `python3 -m http.server`.)
+For frontend development:
+
+```bash
+cd benchmarks/freeciv/viz
+npm install
+python3 build_index.py && python3 dump_atoms.py
+npm run dev                                  # Vite at http://127.0.0.1:4178
+```
 
 ## What it shows
 
-- **Stats** — per-run KPI tiles: winner, final & peak cities/units/techs (PLN vs plain), avg
-  actions/turn, avg PLN conclusions/turn, `% actions = recs` (the *anchoring* metric),
-  illegal-action rate, LLM/reasoning latency.
-- **Moves over time** — per-turn territory trajectories, plus (for runs with per-turn detail)
-  actions proposed/blocked, PLN conclusions, and latency. Crosshair + tooltip on every chart.
-- **Per-unit moves** — a per-turn table of each unit action (actor, action type, target, valid,
-  origin). **Click a row** to open its PLN derivation trace (premises → derived atoms with truth
-  values → recommendation, all from the recorded trace); actions with no PLN derivation are marked
-  **LLM-only** and cannot claim a derivation; invalid actions show the rejection code + reason and
-  the reasoning that led to them. A **turn-objective** panel summarizes the turn's PLN
-  recommendations (explicitly derived, not an authored strategy). Works on saved artifacts — no
-  live game needed.
-- **AtomSpace inspector** — when a run ships a snapshot (`atomspace_latest.json`), a lint banner
-  (missing categories, conflicting truth, game-law confidence, …) over atoms grouped by
-  provenance (observed / derived-heuristic / rule / inferred-PLN). Falls back to the offline
-  fact→rule→recommendation graph reconstructed from a captured state.
+- **Decision overview** — selected run verdict, final PLN-vs-plain city/unit/tech stats, and
+  activity KPIs.
+- **Run catalog** — all benchmark artifacts indexed from `ab_runs/`.
+- **Atomspace** — generated facts, rules, recommendations, and per-run snapshot counts when
+  shipped with the selected artifact.
+- **Action traces** — per-unit moves/traces when raw logs exist; committed-summary-only runs are
+  clearly marked rather than reconstructing unsupported traces.
+- **KPI fixtures** — static micro-benchmark payloads folded into the visualization data.
 
-## Data generators (run by `serve.sh`, or standalone)
+## Data caveat
 
-- `build_index.py` → `data/index.json`: scans `../ab_runs/`, normalizing every layout (A/B
-  `comparison.json`, duel `g{1,2}/duel.jsonl`, old committed-only duel) into one catalog. Reads
-  the raw (gitignored) `duel.jsonl` when present; falls back to the committed
-  `comparison.json` / `duel_comparison.json` otherwise — so it still produces a useful page on a
-  fresh checkout with no raw logs.
-  `build_index.py` also ships, per run, the referenced PLN traces (`<run>/traces/*.json`, filtered
-  to the trace ids the moves reference) and the per-run AtomSpace snapshot
-  (`atomspace_latest.json`) so the page can open a trace and lint the atoms without a live game.
-- `dump_atoms.py` → `data/atoms.json` (+ `data/atomspace_snapshot.json`): reconstructs the
-  atomspace from a captured state (default `../samples/real_state_turn1.json`, override with
-  `--state PATH`) via `adapter → atoms → rules.metta`. Recommendations come from the real
-  MeTTa/PLN engine (`reason.derive`) in-container; on the host it uses a rule-match fallback over
-  the firing Inheritance rules (marked `source: host-fallback`).
+Most committed historical runs contain summary statistics only. They still render in the
+observatory, but the Action traces panel only expands when raw `duel.jsonl` / arm JSONL artifacts
+with move logs are available.
 
-`data/` is regenerated from run artifacts and is **gitignored** — the committed record stays the
-compact `comparison.json` / `duel_comparison.json` files.
+## Validation
 
-## Caveats surfaced in the UI
-
-- `gold`/`score` are now read from the per-player block (real values); `science` remains
-  proxy-limited (often `0`). Verdicts rest on cities/units/techs/survival.
-- Older runs carry only per-turn aggregates — per-unit moves appear only on runs recorded after
-  move-logging was added.
+```bash
+cd benchmarks/freeciv/viz
+npm test
+```
